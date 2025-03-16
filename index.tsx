@@ -366,7 +366,9 @@ export default definePlugin({
             const stateUpdates = voiceStates.filter(x => (
                 x.channelId === myChanId ||
                 x.oldChannelId === myChanId
-            ) && x.userId !== myId && !settings.store.usersWhiteList.includes(x.userId));
+            ) && x.channelId !== x.oldChannelId &&
+                x.userId !== myId &&
+                !settings.store.usersWhiteList.includes(x.userId));
 
             if (!meEnter && !stateUpdates.length) return;
 
