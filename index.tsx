@@ -252,10 +252,18 @@ export default definePlugin({
     },
 
     flux: {
-        async STREAM_CREATE() {
+        async STREAM_CREATE({ streamKey }: { streamKey: string; }) {
+            const myId = UserStore.getCurrentUser().id;
+
+            if (!streamKey.endsWith(myId)) return;
+
             Native.makeObsMessageRequestAsync(settings.store.streamStatusMessage.messageStart);
         },
-        async STREAM_DELETE() {
+        async STREAM_DELETE({ streamKey }: { streamKey: string; }) {
+            const myId = UserStore.getCurrentUser().id;
+
+            if (!streamKey.endsWith(myId)) return;
+
             Native.makeObsMessageRequestAsync(settings.store.streamStatusMessage.messageStop);
 
             const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
