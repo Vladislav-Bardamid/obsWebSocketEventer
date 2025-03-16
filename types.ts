@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+export interface ObsWebSocketCredentials {
+    host: string;
+    port: number;
+    password: string;
+}
+
 export interface RoleSetting {
     id: string;
     guildId: string;
