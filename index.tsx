@@ -28,12 +28,13 @@ import { ChannelStore, Forms, GuildMemberStore, GuildStore, Menu, SelectedChanne
 import { Channel, User } from "discord-types/general";
 
 import { BlackList } from "./components/BlackList";
+import { Credentials } from "./components/Credentials";
 import { MuteDeafen } from "./components/MuteDeafen";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { RoleList } from "./components/RoleList";
 import { StreamStatus } from "./components/StreamStatus";
 import { UsersList } from "./components/UsersList";
-import { MuteDeafenSetting, RoleGroupSetting, RoleGroupSettingBase, RoleSetting, StreamStatusMessage, VoiceState } from "./types";
+import { MuteDeafenSetting, ObsWebSocketCredentials, RoleGroupSetting, RoleGroupSettingBase, RoleSetting, StreamStatusMessage, VoiceState } from "./types";
 
 const VoiceStateStore = findByPropsLazy("getVoiceStatesForChannel", "getCurrentClientVoiceChannelId");
 const Native = VencordNative.pluginHelpers.OBSWebSocketEventer as PluginNative<typeof import("./native")>;
@@ -69,6 +70,17 @@ const makeEmptyGroupBase = (name: string) => ({
 } as RoleGroupSettingBase);
 
 export const settings = definePluginSettings({
+    credentials: {
+        type: OptionType.COMPONENT,
+        component: () => {
+            const { credentials } = settings.use(["credentials"]);
+            return (<Credentials credentials={credentials} />);
+        },
+        default: {
+            host: "ws://127.0.0.1:4455",
+            password: ""
+        } as ObsWebSocketCredentials
+    },
     streamStatusMessage: {
         type: OptionType.COMPONENT,
         component: () => {
@@ -222,6 +234,25 @@ const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string
     ));
 };
 
+async function sendRequest(request: string) {
+    const c = settings.store.credentials;
+
+    if (!c.host || !c.password) return;
+
+    const isConnected = await Native.isConnected();
+
+    if (!isConnected) {
+        await connect();
+    }
+
+    await Native.makeObsMessageRequestAsync(request);
+}
+
+async function connect() {
+    const c = settings.store.credentials;
+    await Native.connect(c.host, c.password);
+}
+
 export default definePlugin({
     name: "OBSWebSocketEventer",
     description: "Make a request to OBS when something happen",
@@ -238,12 +269,12 @@ export default definePlugin({
         </>
     ),
 
-    start() {
-        Native.connect();
+    async start() {
+        await connect();
     },
 
-    stop() {
-        Native.disconnect();
+    async stop() {
+        await Native.disconnect();
     },
 
     contextMenus: {
@@ -257,25 +288,25 @@ export default definePlugin({
 
             if (!streamKey.endsWith(myId)) return;
 
-            Native.makeObsMessageRequestAsync(settings.store.streamStatusMessage.messageStart);
+            sendRequest(settings.store.streamStatusMessage.messageStart);
         },
         async STREAM_DELETE({ streamKey }: { streamKey: string; }) {
             const myId = UserStore.getCurrentUser().id;
 
             if (!streamKey.endsWith(myId)) return;
 
-            Native.makeObsMessageRequestAsync(settings.store.streamStatusMessage.messageStop);
+            sendRequest(settings.store.streamStatusMessage.messageStop);
 
             const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
 
             if (blackListStreamActive) {
-                Native.makeObsMessageRequestAsync(settings.store.blackListMessage.leaveStreamMessage);
+                sendRequest(settings.store.blackListMessage.leaveStreamMessage);
                 blackListStreamActive = false;
             }
 
             activeStreamGroupNames.values()
                 .map(x => enabledGroups.find(r => r.name === x)!.leaveMessage)
-                .forEach(Native.makeObsMessageRequestAsync);
+                .forEach(sendRequest);
 
             activeStreamGroupNames.clear();
             activeUserIdsOnStream.clear();
@@ -314,12 +345,12 @@ export default definePlugin({
                     .filter(x => groupRoles.some(role => userRoles[x].has(role.id)));
 
                 if (enterUserIds.length > 0) {
-                    Native.makeObsMessageRequestAsync(x.userEnterStreamMessage);
+                    sendRequest(x.userEnterStreamMessage);
                     enterUserIds.forEach(x => activeUserIdsOnStream.add(x));
                 }
 
                 if (leaveUserIds.length > 0) {
-                    Native.makeObsMessageRequestAsync(x.userLeaveStreamMessage);
+                    sendRequest(x.userLeaveStreamMessage);
                     leaveUserIds.forEach(x => activeUserIdsOnStream.delete(x));
                 }
 
@@ -330,7 +361,7 @@ export default definePlugin({
 
                 const message = !isActive ? x.enterStreamMessage : x.leaveStreamMessage;
 
-                Native.makeObsMessageRequestAsync(message);
+                sendRequest(message);
 
                 isActive ? activeStreamGroupNames.delete(x.name) : activeStreamGroupNames.add(x.name);
             });
@@ -348,13 +379,13 @@ export default definePlugin({
                 if (activeGroupNames.size === 0) return;
 
                 if (blackListActive) {
-                    Native.makeObsMessageRequestAsync(settings.store.blackListMessage.leaveMessage);
+                    sendRequest(settings.store.blackListMessage.leaveMessage);
                     blackListActive = false;
                 }
 
                 activeGroupNames.values()
                     .map(x => enabledGroups.find(r => r.name === x)!.leaveMessage)
-                    .forEach(Native.makeObsMessageRequestAsync);
+                    .forEach(sendRequest);
 
                 activeGroupNames.clear();
 
@@ -404,11 +435,11 @@ export default definePlugin({
 
                 if (!meEnter) {
                     if (groupRoles.some(role => joinedRoles.has(role.id))) {
-                        Native.makeObsMessageRequestAsync(x.userEnterMessage);
+                        sendRequest(x.userEnterMessage);
                     }
 
                     if (groupRoles.some(role => leftRoles.has(role.id))) {
-                        Native.makeObsMessageRequestAsync(x.userLeaveMessage);
+                        sendRequest(x.userLeaveMessage);
                     }
                 }
 
@@ -419,7 +450,7 @@ export default definePlugin({
 
                 const message = !isActive ? x.enterMessage : x.leaveMessage;
 
-                Native.makeObsMessageRequestAsync(message);
+                sendRequest(message);
 
                 isActive ? activeGroupNames.delete(x.name) : activeGroupNames.add(x.name);
             });
@@ -435,11 +466,11 @@ export default definePlugin({
             const isMuted = s.mute || s.selfMute;
             const isDeafened = s.deaf || s.selfDeaf;
 
-            Native.makeObsMessageRequestAsync(!isMuted ? settings.store.muteDeafen.muteMessage : settings.store.muteDeafen.unmuteMessage);
+            sendRequest(!isMuted ? settings.store.muteDeafen.muteMessage : settings.store.muteDeafen.unmuteMessage);
 
             if (!isMuted || !isDeafened) return;
 
-            Native.makeObsMessageRequestAsync(settings.store.muteDeafen.undeafenMessage);
+            sendRequest(settings.store.muteDeafen.undeafenMessage);
         },
 
         AUDIO_TOGGLE_SELF_DEAF() {
@@ -450,7 +481,7 @@ export default definePlugin({
 
             const isDeafened = s.deaf || s.selfDeaf;
 
-            Native.makeObsMessageRequestAsync(!isDeafened ? settings.store.muteDeafen.deafenMessage : settings.store.muteDeafen.undeafenMessage);
+            sendRequest(!isDeafened ? settings.store.muteDeafen.deafenMessage : settings.store.muteDeafen.undeafenMessage);
         }
     }
 });
@@ -467,7 +498,7 @@ function checkBlackList() {
 
     if (someBlackListUsers === blackListActive) return;
 
-    Native.makeObsMessageRequestAsync(blackListActive
+    sendRequest(blackListActive
         ? settings.store.blackListMessage.leaveMessage
         : settings.store.blackListMessage.enterMessage);
 

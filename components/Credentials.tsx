@@ -6,16 +6,34 @@
 
 import { Forms } from "@webpack/common";
 
-import { RoleGroupSettingBase } from "../types";
-import { MessagesList } from "./MessagesList";
+import { ObsWebSocketCredentials } from "../types";
+import { Input } from "./Input";
 
-export function BlackList({ blackListMessages }: BlackListProps) {
+export function Credentials({ credentials }: CredentialsProps) {
     return (<>
-        <Forms.FormTitle tag="h4">Black list messages</Forms.FormTitle>
-        <MessagesList messages={blackListMessages} />
+        <Forms.FormTitle tag="h4">Credentials</Forms.FormTitle>
+        <table width={"100%"}>
+            <tr>
+                <th><Forms.FormText>URL</Forms.FormText></th>
+                <td><Input
+                    placeholder="Host"
+                    initialValue={credentials.host}
+                    onChange={e => credentials.host = e}
+                /></td>
+            </tr>
+            <tr>
+                <th><Forms.FormText>Password</Forms.FormText></th>
+                <td><Input
+                    placeholder="Password"
+                    isPassword
+                    initialValue={credentials.password}
+                    onChange={e => credentials.password = e}
+                /></td>
+            </tr>
+        </table>
     </>);
 }
 
-interface BlackListProps {
-    blackListMessages: RoleGroupSettingBase;
+interface CredentialsProps {
+    credentials: ObsWebSocketCredentials;
 }

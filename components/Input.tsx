@@ -6,12 +6,13 @@
 
 import { TextInput, useState } from "@webpack/common";
 
-export function Input({ initialValue, onChange, validator, placeholder, style }: {
+export function Input({ initialValue, onChange, validator, placeholder, isPassword, style }: {
     placeholder: string;
-    initialValue: string;
+    initialValue: string | number;
     onChange(value: string): void;
     validator?: (value: string) => boolean;
     style?: React.CSSProperties;
+    isPassword?: boolean;
 }) {
     const [value, setValue] = useState(initialValue);
     const [isValid, setIsValid] = useState(true);
@@ -25,6 +26,7 @@ export function Input({ initialValue, onChange, validator, placeholder, style }:
                 setIsValid(validator ? initialValue === e || validator(e) : true);
             }}
             spellCheck={false}
+            type={isPassword ? "password" : "text"}
             style={{ ...style, border: isValid ? "" : "1px solid red" }}
             onBlur={() => value !== initialValue && isValid && onChange(value)} />
     );

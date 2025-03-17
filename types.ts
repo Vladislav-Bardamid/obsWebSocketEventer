@@ -6,7 +6,6 @@
 
 export interface ObsWebSocketCredentials {
     host: string;
-    port: number;
     password: string;
 }
 
