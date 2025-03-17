@@ -45,9 +45,9 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                                     initialValue={item.name}
                                     onChange={e => { item.name = e; }}
                                     validator={e => checkValid(e) && !roleGroups.find(x => x.name === e)} />
-                                {firstRole?.icon && <img
-                                    className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon"
-                                    src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${firstRole.id}/${firstRole.icon}.webp?size=24&quality=lossless`} />}
+                                {firstRole?.icon
+                                    ? <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${firstRole.id}/${firstRole.icon}.webp?size=24&quality=lossless`} />
+                                    : <span>&nbsp;</span>}
                                 <Button
                                     size={Button.Sizes.MIN}
                                     onClick={() => roleGroups.splice(index, 1)}
@@ -59,12 +59,14 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                                 >
                                     <DeleteIcon />
                                 </Button>
-                                {roles.length > 0 && <Forms.FormText style={{
-                                    verticalAlign: "middle",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis"
-                                }}>{roles}</Forms.FormText>}
+                                {roles.length > 0 && <Forms.FormText
+                                    title={roles}
+                                    style={{
+                                        verticalAlign: "middle",
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis"
+                                    }}>{roles}</Forms.FormText>}
                             </div>
                             <MessagesList messages={item} />
                         </div>

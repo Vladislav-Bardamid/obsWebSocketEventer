@@ -12,9 +12,9 @@ import { Input } from "./Input";
 export function Credentials({ credentials }: CredentialsProps) {
     return (<>
         <Forms.FormTitle tag="h4">Credentials</Forms.FormTitle>
-        <table style={{ width: "100%", verticalAlign: "middle" }}>
-            <tr style={{ width: "1%" }}>
-                <th><Forms.FormText>URL</Forms.FormText></th>
+        <table style={{ width: "100%" }}>
+            <tr>
+                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>URL</Forms.FormText></th>
                 <td><Input
                     placeholder="Host"
                     initialValue={credentials.host}

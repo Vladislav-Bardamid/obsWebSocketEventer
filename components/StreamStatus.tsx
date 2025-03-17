@@ -14,11 +14,12 @@ export function StreamStatus({ streamStatusMessage }: StreamStatusProps) {
         <Forms.FormTitle tag="h4">Stream Status Messages</Forms.FormTitle>
         <table style={{ width: "100%" }}>
             <tr>
+                <th></th>
                 <th><Forms.FormText>Start</Forms.FormText></th>
                 <th><Forms.FormText>Stop</Forms.FormText></th>
             </tr>
             <tr>
-                <th style={{ width: "1%" }}><Forms.FormTitle>Stream</Forms.FormTitle></th>
+                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Stream</Forms.FormText></th>
                 <td><Input
                     placeholder="Message start"
                     initialValue={streamStatusMessage.messageStart}

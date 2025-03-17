@@ -39,9 +39,9 @@ export function RoleList({ roles }: GuildRoleListProps) {
                                     value={!item.disabled}
                                     onChange={e => item.disabled = !e}
                                 ></Switch>
-                                {role.icon && <img
-                                    className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon"
-                                    src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=24&quality=lossless`} />}
+                                {role.icon
+                                    ? <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=24&quality=lossless`} />
+                                    : <span>&nbsp;</span>}
                                 <Forms.FormText style={{ maxWidth: "10rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{role.name}{role.name ? " - " : ""}{guild.name}</Forms.FormText>
                                 <Button
                                     size={Button.Sizes.MIN}
@@ -65,12 +65,14 @@ export function RoleList({ roles }: GuildRoleListProps) {
                                 >
                                     <NotesIcon />
                                 </Button>
-                                <Forms.FormText style={{
-                                    flexGrow: 1,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                }}>{item.groupNames}</Forms.FormText>
+                                <Forms.FormText
+                                    title={item.groupNames}
+                                    style={{
+                                        flexGrow: 1,
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                    }}>{item.groupNames}</Forms.FormText>
                             </div>
                             {editRoleId === index && <div>
                                 <Input
