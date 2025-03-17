@@ -14,7 +14,7 @@ export function Credentials({ credentials }: CredentialsProps) {
         <Forms.FormTitle tag="h4">Credentials</Forms.FormTitle>
         <table style={{ width: "100%" }}>
             <tr>
-                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>URL</Forms.FormText></th>
+                <th style={{ width: "1%", verticalAlign: "middle", textAlign: "right" }}><Forms.FormText>URL</Forms.FormText></th>
                 <td><Input
                     placeholder="Host"
                     initialValue={credentials.host}
@@ -22,7 +22,7 @@ export function Credentials({ credentials }: CredentialsProps) {
                 /></td>
             </tr>
             <tr>
-                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Password</Forms.FormText></th>
+                <th style={{ width: "1%", verticalAlign: "middle", textAlign: "right" }}><Forms.FormText>Password</Forms.FormText></th>
                 <td><Input
                     placeholder="Password"
                     isPassword

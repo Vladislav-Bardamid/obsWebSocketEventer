@@ -20,7 +20,7 @@ export function MuteDeafen({ muteDeafen: muteDeaf }: MuteDeafenProps) {
                 <th><Forms.FormText>Off</Forms.FormText></th>
             </tr>
             <tr>
-                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Mute</Forms.FormText></th>
+                <th style={{ width: "1%", verticalAlign: "middle", textAlign: "right" }}><Forms.FormText>Mute</Forms.FormText></th>
                 <td><Input
                     placeholder="Mute message"
                     initialValue={muteDeaf.muteMessage}
