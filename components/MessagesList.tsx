@@ -19,7 +19,7 @@ export function MessagesList({ messages }: GuildMessageListProps) {
             <th><Forms.FormText>Leave</Forms.FormText></th>
         </tr>
         <tr>
-            <th><Forms.FormText>Group</Forms.FormText></th>
+            <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Group</Forms.FormText></th>
             <td><Input
                 placeholder="Enter message"
                 initialValue={messages.enterMessage}
@@ -34,7 +34,7 @@ export function MessagesList({ messages }: GuildMessageListProps) {
                 validator={checkMessageValid} /></td>
         </tr>
         <tr>
-            <th><Forms.FormText>User</Forms.FormText></th>
+            <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>User</Forms.FormText></th>
             <td><Input
                 placeholder="User enter message"
                 initialValue={messages.userEnterMessage}
@@ -47,7 +47,7 @@ export function MessagesList({ messages }: GuildMessageListProps) {
                 validator={checkMessageValid} /></td>
         </tr>
         <tr>
-            <th><Forms.FormText>Stream (group)</Forms.FormText></th>
+            <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Stream (group)</Forms.FormText></th>
             <td><Input
                 placeholder="Stream enter message"
                 initialValue={messages.enterStreamMessage}
@@ -60,7 +60,7 @@ export function MessagesList({ messages }: GuildMessageListProps) {
                 validator={checkMessageValid} /></td>
         </tr>
         <tr>
-            <th><Forms.FormText>Stream (user)</Forms.FormText></th>
+            <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Stream (user)</Forms.FormText></th>
             <td><Input
                 placeholder="User stream enter message"
                 initialValue={messages.userEnterStreamMessage}

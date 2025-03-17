@@ -12,8 +12,8 @@ import { Input } from "./Input";
 export function Credentials({ credentials }: CredentialsProps) {
     return (<>
         <Forms.FormTitle tag="h4">Credentials</Forms.FormTitle>
-        <table width={"100%"}>
-            <tr>
+        <table style={{ width: "100%", verticalAlign: "middle" }}>
+            <tr style={{ width: "1%" }}>
                 <th><Forms.FormText>URL</Forms.FormText></th>
                 <td><Input
                     placeholder="Host"
@@ -22,7 +22,7 @@ export function Credentials({ credentials }: CredentialsProps) {
                 /></td>
             </tr>
             <tr>
-                <th><Forms.FormText>Password</Forms.FormText></th>
+                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Password</Forms.FormText></th>
                 <td><Input
                     placeholder="Password"
                     isPassword

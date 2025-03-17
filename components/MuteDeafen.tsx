@@ -20,7 +20,7 @@ export function MuteDeafen({ muteDeafen: muteDeaf }: MuteDeafenProps) {
                 <th><Forms.FormText>Off</Forms.FormText></th>
             </tr>
             <tr>
-                <th><Forms.FormText>Mute</Forms.FormText></th>
+                <th style={{ width: "1%", verticalAlign: "middle" }}><Forms.FormText>Mute</Forms.FormText></th>
                 <td><Input
                     placeholder="Mute message"
                     initialValue={muteDeaf.muteMessage}
@@ -35,7 +35,7 @@ export function MuteDeafen({ muteDeafen: muteDeaf }: MuteDeafenProps) {
                     validator={checkValid} /></td>
             </tr>
             <tr>
-                <th><Forms.FormText>Deaf</Forms.FormText></th>
+                <th style={{ width: "1%" }}><Forms.FormText>Deaf</Forms.FormText></th>
                 <td><Input
                     placeholder="Deaf message"
                     initialValue={muteDeaf.deafenMessage}

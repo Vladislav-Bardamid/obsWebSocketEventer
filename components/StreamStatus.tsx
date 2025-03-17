@@ -18,7 +18,7 @@ export function StreamStatus({ streamStatusMessage }: StreamStatusProps) {
                 <th><Forms.FormText>Stop</Forms.FormText></th>
             </tr>
             <tr>
-                <th><Forms.FormTitle>Stream</Forms.FormTitle></th>
+                <th style={{ width: "1%" }}><Forms.FormTitle>Stream</Forms.FormTitle></th>
                 <td><Input
                     placeholder="Message start"
                     initialValue={streamStatusMessage.messageStart}
