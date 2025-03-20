@@ -418,7 +418,7 @@ export default definePlugin({
                 .map(x => x.userId);
 
             [...currentUserIds, ...leftUserIds].forEach(x =>
-                userRoles[x] = new Set(GuildMemberStore.getMember(myGuildId, x).roles));
+                userRoles[x] = new Set(GuildMemberStore.getMember(myGuildId, x)?.roles ?? []));
 
             const currentRoles = new Set(currentUserIds.values()
                 .flatMap(x => userRoles[x]));
