@@ -16,7 +16,19 @@ export function RoleList({ roles }: GuildRoleListProps) {
     const activeRoles = roles.filter(x => !x.deleted);
 
     const guildRoles = {} as Record<string, Role>;
-    activeRoles.forEach(x => guildRoles[x.id] = GuildStore.getRole(x.guildId, x.id)!);
+
+    activeRoles.forEach((x, i) => {
+        const role = GuildStore.getRole(x.guildId, x.id);
+
+        if (!role) {
+            roles.splice(roles.indexOf(x), 1);
+            activeRoles.splice(i, 1);
+
+            return;
+        }
+
+        guildRoles[x.id] = role;
+    });
 
     activeRoles.sort((a, b) => a.guildId.localeCompare(b.guildId) || guildRoles[a.id].position - guildRoles[b.id].position);
 

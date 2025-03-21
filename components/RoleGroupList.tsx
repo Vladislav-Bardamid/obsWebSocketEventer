@@ -25,7 +25,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
 
                 const roles = item.name
                     ? guildRoles.filter(x => x.groupNames.includes(item.name))
-                        .map(x => GuildStore.getRole(x.guildId, x.id)!.name)
+                        .map(x => GuildStore.getRole(x.guildId, x.id)?.name)
                         .join(" ")
                     : "";
 
