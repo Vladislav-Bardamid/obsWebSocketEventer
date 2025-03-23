@@ -505,16 +505,23 @@ function checkBlackList() {
     blackListActive = someBlackListUsers;
 }
 
-export function checkValid(value: string) {
-    if (!value || /^[a-zA-Z0-9\- ]+$/.test(value)) {
+export function checkValidName(value: string) {
+    if (!value || /^[a-zA-Z0-9-]+$/.test(value)) {
         return true;
     }
 
     return false;
 }
 
+export function checkValidGroupNames(value: string) {
+    if (!value || /^[a-zA-Z0-9- ]+$/.test(value)) {
+    }
+
+    return false;
+}
+
 export function checkMessageValid(value: string) {
-    if (!checkValid(value)) return false;
+    if (!checkValidName(value)) return false;
 
     const messages = [
         ...settings.store.guildRoleGroups.flatMap(x => [

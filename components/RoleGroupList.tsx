@@ -7,7 +7,7 @@
 import { DeleteIcon, PlusIcon } from "@components/Icons";
 import { Button, Forms, GuildStore, React, Switch, useState } from "@webpack/common";
 
-import { checkValid, makeEmptyGroup, settings } from "..";
+import { checkValidName, makeEmptyGroup, settings } from "..";
 import { RoleGroupSetting } from "../types";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
@@ -43,8 +43,20 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                                     style={{ width: "10rem" }}
                                     placeholder="Group name"
                                     initialValue={item.name}
-                                    onChange={e => { item.name = e; }}
-                                    validator={e => checkValid(e) && !roleGroups.find(x => x.name === e)} />
+                                    onChange={e => {
+                                        settings.store.guildRoles.forEach(x => {
+                                            const groupNames = x.groupNames.split(" ");
+                                            const index = groupNames.indexOf(item.name);
+
+                                            if (index !== -1) {
+                                                groupNames[index] = e;
+                                                x.groupNames = groupNames.join(" ");
+                                            }
+                                        });
+
+                                        item.name = e;
+                                    }}
+                                    validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} />
                                 {firstRole?.icon
                                     ? <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${firstRole.id}/${firstRole.icon}.webp?size=24&quality=lossless`} />
                                     : <span>&nbsp;</span>}
@@ -81,7 +93,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                         roleGroups.push(makeEmptyGroup(e)),
                             setIsCreating(false);
                     }}
-                    validator={e => checkValid(e) && !roleGroups.find(x => x.name === e)} /><Button
+                    validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} /><Button
                         size={Button.Sizes.MIN}
                         onClick={() => { setIsCreating(false); }}
                         style={{
