@@ -514,7 +514,8 @@ export function checkValidName(value: string) {
 }
 
 export function checkValidGroupNames(value: string) {
-    if (!value || /^[a-zA-Z0-9- ]+$/.test(value)) {
+    if (!value || /^[a-zA-Z0-9\- ]+$/.test(value)) {
+        return true;
     }
 
     return false;

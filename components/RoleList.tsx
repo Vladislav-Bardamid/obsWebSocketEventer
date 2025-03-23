@@ -90,7 +90,7 @@ export function RoleList({ roles }: GuildRoleListProps) {
                                 <Input
                                     placeholder="Role groups"
                                     initialValue={item.groupNames}
-                                    onChange={e => { item.groupNames = e; setEditRoleId(-1); }}
+                                    onChange={e => { item.groupNames = e.trim(); setEditRoleId(-1); }}
                                     validator={checkValidGroupNames} />
                             </div>}
                         </div>
