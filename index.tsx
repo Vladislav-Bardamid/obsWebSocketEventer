@@ -506,19 +506,11 @@ function checkBlackList() {
 }
 
 export function checkValidName(value: string) {
-    if (!value || /^[a-zA-Z0-9-]+$/.test(value)) {
-        return true;
-    }
-
-    return false;
+    return !value || /^[a-zA-Z0-9-]+$/.test(value);
 }
 
 export function checkValidGroupNames(value: string) {
-    if (!value || /^[a-zA-Z0-9\- ]+$/.test(value)) {
-        return true;
-    }
-
-    return false;
+    return !value || /^[a-zA-Z0-9\- ]+$/.test(value);
 }
 
 export function checkMessageValid(value: string) {
