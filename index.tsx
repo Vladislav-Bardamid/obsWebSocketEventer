@@ -305,7 +305,7 @@ export default definePlugin({
             }
 
             activeStreamGroupNames.values()
-                .map(x => enabledGroups.find(r => r.name === x)!.leaveMessage)
+                .map(x => enabledGroups.find(r => r.name === x)!.leaveStreamMessage)
                 .forEach(sendRequest);
 
             activeStreamGroupNames.clear();
