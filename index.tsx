@@ -509,7 +509,8 @@ function checkCurrentRoles() {
     const myGuildId = SelectedGuildStore.getGuildId();
 
     const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
-    const enabledRoles = settings.store.guildRoles.filter(role => !role.disabled && !role.deleted);
+    const enabledRoles = settings.store.guildRoles.filter(role =>
+        !role.disabled && !role.deleted && role.guildId === myGuildId);
 
     const currentUserIds = Object.keys(VoiceStateStore.getVoiceStatesForChannel(myChanId))
         .filter(x => x !== myId && !settings.store.usersWhiteList.includes(x));
