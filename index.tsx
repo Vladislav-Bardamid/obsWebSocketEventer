@@ -21,14 +21,13 @@ import { definePluginSettings } from "@api/Settings";
 import { ImageIcon } from "@components/Icons";
 import { Link } from "@components/Link";
 import { Devs } from "@utils/constants";
-import { getCurrentChannel } from "@utils/discord";
 import definePlugin, { OptionType, PluginNative, ReporterTestable } from "@utils/types";
 import { findByPropsLazy } from "@webpack";
 import { ChannelStore, Forms, GuildMemberStore, GuildStore, Menu, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
 import { Channel, User } from "discord-types/general";
 
-import { BlackList } from "./components/BlackList";
 import { Credentials } from "./components/Credentials";
+import { MessagesList } from "./components/MessagesList";
 import { MuteDeafen } from "./components/MuteDeafen";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { RoleList } from "./components/RoleList";
@@ -37,6 +36,8 @@ import { UsersList } from "./components/UsersList";
 import { MuteDeafenSetting, ObsWebSocketCredentials, RoleGroupSetting, RoleGroupSettingBase, RoleSetting, StreamStatusMessage, VoiceState } from "./types";
 
 const VoiceStateStore = findByPropsLazy("getVoiceStatesForChannel", "getCurrentClientVoiceChannelId");
+const MediaEngineStore = findByPropsLazy("isLocalMute", "isLocalVideoDisabled");
+
 const Native = VencordNative.pluginHelpers.OBSWebSocketEventer as PluginNative<typeof import("./native")>;
 
 interface UserContextProps {
@@ -105,11 +106,23 @@ export const settings = definePluginSettings({
             undeafenMessage: "undeaf-message"
         } as MuteDeafenSetting
     },
+    mutedMessage: {
+        type: OptionType.COMPONENT,
+        component: () => {
+            const { mutedMessage } = settings.use(["mutedMessage"]);
+            return (<>
+                <Forms.FormTitle tag="h4">Muted messages</Forms.FormTitle>
+                <MessagesList messages={mutedMessage} /></>);
+        },
+        default: makeEmptyGroupBase("muted")
+    },
     blackListMessage: {
         type: OptionType.COMPONENT,
         component: () => {
             const { blackListMessage } = settings.use(["blackListMessage"]);
-            return (<BlackList blackListMessages={blackListMessage} />);
+            return (<>
+                <Forms.FormTitle tag="h4">Black list messages</Forms.FormTitle>
+                <MessagesList messages={blackListMessage} /></>);
         },
         default: makeEmptyGroupBase("blacklist")
     },
@@ -153,6 +166,8 @@ const activeUserIds = new Set<string>();
 const activeUserIdsOnStream = new Set<string>();
 let blackListActive = false;
 let blackListStreamActive = false;
+let mutedActive = false;
+const mutedStreamActive = false;
 
 const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: UserContextProps) => {
     if (!user || !guildId) return;
@@ -185,9 +200,7 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
                         list.splice(hasRole ? userWhiteListIndex : userBlackListIndex, 1);
                     }
 
-                    if (!hasRole) {
-                        checkBlackList();
-                    }
+                    hasRole ? checkCurrentRoles() : checkBlackList();
 
                     changeChecked(!checked);
                 }}
@@ -198,11 +211,12 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
     ));
 };
 
-const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string; }) => {
-    const guildId = getCurrentChannel()?.guild_id;
-    if (!guildId) return;
+const RoleContext: NavContextMenuPatchCallback = (children, { id, userId }: { id: string; userId: string; }) => {
+    const myChanId = SelectedChannelStore.getChannelId();
 
+    const guildId = SelectedGuildStore.getGuildId();
     const role = GuildStore.getRole(guildId, id);
+
     if (!role) return;
 
     const roleIndex = settings.store.guildRoles.findIndex(r => r.guildId === guildId && r.id === id);
@@ -225,6 +239,10 @@ const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string
                         settings.store.guildRoles.push(makeEmptyRole(id, guildId));
                     }
 
+                    if (getVoiceStatesForChannel(myChanId).includes(userId)) {
+                        checkCurrentRoles();
+                    }
+
                     changeChecked(!checked);
                 }}
                 icon={ImageIcon}
@@ -233,6 +251,10 @@ const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string
         </Menu.MenuGroup>
     ));
 };
+
+function getVoiceStatesForChannel(channelId: string) {
+    return Object.keys(VoiceStateStore.getVoiceStatesForChannel(channelId));
+}
 
 async function sendRequest(request: string) {
     const c = settings.store.credentials;
@@ -253,6 +275,12 @@ async function connect() {
     await Native.connect(c.host, c.password);
 }
 
+function init() {
+    checkBlackList();
+    checkMuted();
+    checkCurrentRoles();
+}
+
 export default definePlugin({
     name: "OBSWebSocketEventer",
     description: "Make a request to OBS when something happen",
@@ -271,6 +299,12 @@ export default definePlugin({
 
     async start() {
         await connect();
+
+        const myChanId = SelectedChannelStore.getVoiceChannelId();
+
+        if (!myChanId) return;
+
+        init();
     },
 
     async stop() {
@@ -284,207 +318,221 @@ export default definePlugin({
 
     flux: {
         async STREAM_CREATE({ streamKey }: { streamKey: string; }) {
-            const myId = UserStore.getCurrentUser().id;
-
-            if (!streamKey.endsWith(myId)) return;
-
-            sendRequest(settings.store.streamStatusMessage.messageStart);
+            checkStreamCreate(streamKey);
         },
         async STREAM_DELETE({ streamKey }: { streamKey: string; }) {
-            const myId = UserStore.getCurrentUser().id;
-
-            if (!streamKey.endsWith(myId)) return;
-
-            sendRequest(settings.store.streamStatusMessage.messageStop);
-
-            const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
-
-            if (blackListStreamActive) {
-                sendRequest(settings.store.blackListMessage.leaveStreamMessage);
-                blackListStreamActive = false;
-            }
-
-            activeStreamGroupNames.values()
-                .map(x => enabledGroups.find(r => r.name === x)!.leaveStreamMessage)
-                .forEach(sendRequest);
-
-            activeStreamGroupNames.clear();
-            activeUserIdsOnStream.clear();
+            checkStreamDelete(streamKey);
         },
         async STREAM_UPDATE({ viewerIds, streamKey }: { viewerIds: string[]; streamKey: string; }) {
-            const myId = UserStore.getCurrentUser().id;
-
-            if (!streamKey.endsWith(myId)) return;
-
-            const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
-            const enabledRoles = settings.store.guildRoles.filter(role => !role.disabled && !role.deleted);
-
-            const myGuildId = SelectedGuildStore.getGuildId();
-
-            const whiteListedUserIds = viewerIds
-                .filter(x => !settings.store.usersWhiteList.includes(x));
-
-            const leftUserIds = [...activeUserIdsOnStream]
-                .filter(x => !whiteListedUserIds.includes(x));
-
-            const userRoles = {} as Record<string, Set<string>>;
-
-            [...whiteListedUserIds, ...leftUserIds]
-                .forEach(x => userRoles[x] = new Set(GuildMemberStore.getMember(myGuildId, x).roles));
-
-            const currentRoles = new Set(whiteListedUserIds.values()
-                .flatMap(x => userRoles[x]));
-
-            enabledGroups.forEach(x => {
-                const groupRoles = enabledRoles
-                    .filter(role => role.groupNames.includes(x.name));
-
-                const enterUserIds = whiteListedUserIds
-                    .filter(x => groupRoles.some(role => userRoles[x].has(role.id)));
-                const leaveUserIds = leftUserIds
-                    .filter(x => groupRoles.some(role => userRoles[x].has(role.id)));
-
-                if (enterUserIds.length > 0) {
-                    sendRequest(x.userEnterStreamMessage);
-                    enterUserIds.forEach(x => activeUserIdsOnStream.add(x));
-                }
-
-                if (leaveUserIds.length > 0) {
-                    sendRequest(x.userLeaveStreamMessage);
-                    leaveUserIds.forEach(x => activeUserIdsOnStream.delete(x));
-                }
-
-                const isActive = activeStreamGroupNames.has(x.name);
-                const some = groupRoles.some(x => currentRoles.has(x.id));
-
-                if (some === isActive) return;
-
-                const message = !isActive ? x.enterStreamMessage : x.leaveStreamMessage;
-
-                sendRequest(message);
-
-                isActive ? activeStreamGroupNames.delete(x.name) : activeStreamGroupNames.add(x.name);
-            });
+            checkStreamUpdates(streamKey, viewerIds);
         },
         async VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceState[]; }) {
-            const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
-            const enabledRoles = settings.store.guildRoles.filter(role => !role.disabled && !role.deleted);
-
-            const myId = UserStore.getCurrentUser().id;
             const myChanId = SelectedChannelStore.getVoiceChannelId();
 
-            const meEnter = voiceStates.some(x => x.userId === myId);
-
             if (!myChanId) {
-                if (activeGroupNames.size === 0) return;
-
-                if (blackListActive) {
-                    sendRequest(settings.store.blackListMessage.leaveMessage);
-                    blackListActive = false;
-                }
-
-                activeGroupNames.values()
-                    .map(x => enabledGroups.find(r => r.name === x)!.leaveMessage)
-                    .forEach(sendRequest);
-
-                activeGroupNames.clear();
-
+                disposeMessages();
                 return;
             }
 
             if (ChannelStore.getChannel(myChanId).type === 13 /* Stage Channel */) return;
 
-            const stateUpdates = voiceStates.filter(x => (
+            const myId = UserStore.getCurrentUser().id;
+
+            let stateUpdates = voiceStates.filter(x => (
                 x.channelId === myChanId ||
                 x.oldChannelId === myChanId
-            ) && x.channelId !== x.oldChannelId &&
+            ));
+
+            if (stateUpdates.length === 0) return;
+
+            const meEnter = voiceStates.some(x => x.userId === myId);
+            stateUpdates = stateUpdates.filter(x =>
                 x.userId !== myId &&
+                x.channelId !== x.oldChannelId &&
                 !settings.store.usersWhiteList.includes(x.userId));
 
-            if (!meEnter && !stateUpdates.length) return;
+            if (!meEnter && stateUpdates.length === 0) return;
 
-            const userRoles = {} as Record<string, Set<string>>;
-            const myGuildId = SelectedGuildStore.getGuildId();
+            checkStateUpdates(stateUpdates);
+            init();
 
-            const currentUserIds = Object.keys(VoiceStateStore.getVoiceStatesForChannel(myChanId))
-                .filter(x => x !== myId && !settings.store.usersWhiteList.includes(x));
-
-            const joinedUserIds = stateUpdates
-                .filter(x => x.channelId === myChanId)
-                .map(x => x.userId);
-
-            const leftUserIds = stateUpdates
-                .filter(x => x.oldChannelId === myChanId)
-                .map(x => x.userId);
-
-            [...currentUserIds, ...leftUserIds].forEach(x =>
-                userRoles[x] = new Set(GuildMemberStore.getMember(myGuildId, x)?.roles ?? []));
-
-            const currentRoles = new Set(currentUserIds.values()
-                .flatMap(x => userRoles[x]));
-
-            const joinedRoles = new Set(joinedUserIds.values()
-                .flatMap(x => userRoles[x]));
-
-            const leftRoles = new Set(leftUserIds.values()
-                .flatMap(x => userRoles[x]));
-
-            enabledGroups.forEach(x => {
-                const groupRoles = enabledRoles
-                    .filter(role => role.groupNames.includes(x.name));
-
-                if (!meEnter) {
-                    if (groupRoles.some(role => joinedRoles.has(role.id))) {
-                        sendRequest(x.userEnterMessage);
-                    }
-
-                    if (groupRoles.some(role => leftRoles.has(role.id))) {
-                        sendRequest(x.userLeaveMessage);
-                    }
-                }
-
-                const isActive = activeGroupNames.has(x.name);
-                const some = groupRoles.some(x => currentRoles.has(x.id));
-
-                if (some === isActive) return;
-
-                const message = !isActive ? x.enterMessage : x.leaveMessage;
-
-                sendRequest(message);
-
-                isActive ? activeGroupNames.delete(x.name) : activeGroupNames.add(x.name);
-            });
-
-            checkBlackList();
         },
         AUDIO_TOGGLE_SELF_MUTE() {
-            const chanId = SelectedChannelStore.getVoiceChannelId()!;
-            const s = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
-
-            if (!s) return;
-
-            const isMuted = s.mute || s.selfMute;
-            const isDeafened = s.deaf || s.selfDeaf;
-
-            sendRequest(!isMuted ? settings.store.muteDeafen.muteMessage : settings.store.muteDeafen.unmuteMessage);
-
-            if (!isMuted || !isDeafened) return;
-
-            sendRequest(settings.store.muteDeafen.undeafenMessage);
+            checkMuteStatus();
         },
 
         AUDIO_TOGGLE_SELF_DEAF() {
-            const chanId = SelectedChannelStore.getVoiceChannelId()!;
-            const s = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+            checkDeafStatus();
+        },
 
-            if (!s) return;
-
-            const isDeafened = s.deaf || s.selfDeaf;
-
-            sendRequest(!isDeafened ? settings.store.muteDeafen.deafenMessage : settings.store.muteDeafen.undeafenMessage);
+        AUDIO_TOGGLE_LOCAL_MUTE() {
+            checkMuted();
         }
     }
 });
+
+function checkStreamCreate(streamKey: string) {
+    const myId = UserStore.getCurrentUser().id;
+
+    if (!streamKey.endsWith(myId)) return;
+
+    sendRequest(settings.store.streamStatusMessage.messageStart);
+}
+
+function checkStreamDelete(streamKey: string) {
+    const myId = UserStore.getCurrentUser().id;
+
+    if (!streamKey.endsWith(myId)) return;
+
+    sendRequest(settings.store.streamStatusMessage.messageStop);
+
+    const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
+
+    if (blackListStreamActive) {
+        sendRequest(settings.store.blackListMessage.leaveStreamMessage);
+        blackListStreamActive = false;
+    }
+
+    activeStreamGroupNames.values()
+        .map(x => enabledGroups.find(r => r.name === x)!.leaveStreamMessage)
+        .forEach(sendRequest);
+
+    activeStreamGroupNames.clear();
+    activeUserIdsOnStream.clear();
+}
+
+function checkStreamUpdates(streamKey: string, viewerIds: string[]) {
+    const myId = UserStore.getCurrentUser().id;
+    const myGuildId = SelectedGuildStore.getGuildId();
+
+    if (!streamKey.endsWith(myId)) return;
+
+    const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
+    const enabledRoles = settings.store.guildRoles.filter(role => !role.disabled && !role.deleted);
+
+    const whiteListedUserIds = viewerIds
+        .filter(x => !settings.store.usersWhiteList.includes(x));
+
+    const leftUserIds = [...activeUserIdsOnStream]
+        .filter(x => !whiteListedUserIds.includes(x));
+
+    enabledGroups.forEach(x => {
+        const groupRoles = enabledRoles
+            .filter(role => role.groupNames.includes(x.name));
+
+        const enterUserIds = whiteListedUserIds
+            .filter(x => groupRoles.some(role => checkUserHasRole(x, myGuildId, role.id)));
+        const leaveUserIds = leftUserIds
+            .filter(x => groupRoles.some(role => checkUserHasRole(x, myGuildId, role.id)));
+
+        if (enterUserIds.length > 0) {
+            sendRequest(x.userEnterStreamMessage);
+            enterUserIds.forEach(x => activeUserIdsOnStream.add(x));
+        }
+
+        if (leaveUserIds.length > 0) {
+            sendRequest(x.userLeaveStreamMessage);
+            leaveUserIds.forEach(x => activeUserIdsOnStream.delete(x));
+        }
+    });
+}
+
+function checkUserHasRole(userId: string, guildId: string, roleId: string) {
+    const roles = GuildMemberStore.getMember(guildId, userId)?.roles;
+    const result = roles?.includes(roleId);
+
+    return result;
+}
+
+function checkStateUpdates(voiceStates: VoiceState[]) {
+    const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
+    const enabledRoles = settings.store.guildRoles.filter(role => !role.disabled && !role.deleted);
+
+    const myChanId = SelectedChannelStore.getVoiceChannelId()!;
+    const myGuildId = SelectedGuildStore.getGuildId();
+
+    if (!voiceStates.length) return;
+
+    const joinedUserIds = voiceStates
+        .filter(x => x.channelId === myChanId)
+        .map(x => x.userId);
+
+    const leftUserIds = voiceStates
+        .filter(x => x.oldChannelId === myChanId)
+        .map(x => x.userId);
+
+    const joinedRoles = new Set(joinedUserIds.values()
+        .flatMap(x => GuildMemberStore.getMember(myGuildId, x)?.roles ?? []));
+
+    const leftRoles = new Set(leftUserIds.values()
+        .flatMap(x => GuildMemberStore.getMember(myGuildId, x)?.roles ?? []));
+
+    enabledGroups.forEach(x => {
+        const groupRoles = enabledRoles
+            .filter(role => role.groupNames.includes(x.name));
+
+        if (groupRoles.some(role => joinedRoles.has(role.id))) {
+            sendRequest(x.userEnterMessage);
+        }
+
+        if (groupRoles.some(role => leftRoles.has(role.id))) {
+            sendRequest(x.userLeaveMessage);
+        }
+    });
+}
+
+function disposeMessages() {
+    const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
+
+    if (activeGroupNames.size === 0) return;
+
+    if (blackListActive) {
+        sendRequest(settings.store.blackListMessage.leaveMessage);
+        blackListActive = false;
+    }
+
+    if (mutedActive) {
+        sendRequest(settings.store.mutedMessage.leaveMessage);
+        mutedActive = false;
+    }
+
+    activeGroupNames.values()
+        .map(x => enabledGroups.find(r => r.name === x)!.leaveMessage)
+        .forEach(sendRequest);
+
+    activeGroupNames.clear();
+}
+
+function checkCurrentRoles() {
+    const myId = UserStore.getCurrentUser().id;
+    const myChanId = SelectedChannelStore.getVoiceChannelId();
+    const myGuildId = SelectedGuildStore.getGuildId();
+
+    const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
+    const enabledRoles = settings.store.guildRoles.filter(role => !role.disabled && !role.deleted);
+
+    const currentUserIds = Object.keys(VoiceStateStore.getVoiceStatesForChannel(myChanId))
+        .filter(x => x !== myId && !settings.store.usersWhiteList.includes(x));
+
+    const currentRoles = new Set(currentUserIds.values()
+        .flatMap(x => GuildMemberStore.getMember(myGuildId, x)?.roles ?? []));
+
+    enabledGroups.forEach(x => {
+        const groupRoles = enabledRoles
+            .filter(role => role.groupNames.includes(x.name));
+
+        const isActive = activeGroupNames.has(x.name);
+        const some = groupRoles.some(x => currentRoles.has(x.id));
+
+        if (some === isActive) return;
+
+        const message = !isActive ? x.enterMessage : x.leaveMessage;
+
+        sendRequest(message);
+
+        isActive ? activeGroupNames.delete(x.name) : activeGroupNames.add(x.name);
+    });
+}
 
 function checkBlackList() {
     const myId = UserStore.getCurrentUser().id;
@@ -503,6 +551,48 @@ function checkBlackList() {
         : settings.store.blackListMessage.enterMessage);
 
     blackListActive = someBlackListUsers;
+}
+
+function checkMuted() {
+    const myChanId = SelectedChannelStore.getVoiceChannelId();
+    const currentUserIds = Object.keys(VoiceStateStore.getVoiceStatesForChannel(myChanId)) as string[];
+
+    const someMutedUsers = currentUserIds.some(x => MediaEngineStore.isLocalMute(x));
+
+    if (someMutedUsers === mutedActive) return;
+
+    sendRequest(mutedActive
+        ? settings.store.mutedMessage.leaveMessage
+        : settings.store.mutedMessage.enterMessage);
+
+    mutedActive = someMutedUsers;
+}
+
+function checkMuteStatus() {
+    const chanId = SelectedChannelStore.getVoiceChannelId()!;
+    const s = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+
+    if (!s) return;
+
+    const isMuted = s.mute || s.selfMute;
+    const isDeafened = s.deaf || s.selfDeaf;
+
+    sendRequest(!isMuted ? settings.store.muteDeafen.muteMessage : settings.store.muteDeafen.unmuteMessage);
+
+    if (!isMuted || !isDeafened) return;
+
+    sendRequest(settings.store.muteDeafen.undeafenMessage);
+}
+
+function checkDeafStatus() {
+    const chanId = SelectedChannelStore.getVoiceChannelId()!;
+    const s = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+
+    if (!s) return;
+
+    const isDeafened = s.deaf || s.selfDeaf;
+
+    sendRequest(!isDeafened ? settings.store.muteDeafen.deafenMessage : settings.store.muteDeafen.undeafenMessage);
 }
 
 export function checkValidName(value: string) {
@@ -527,10 +617,20 @@ export function checkMessageValid(value: string) {
             x.userEnterStreamMessage,
             x.userLeaveStreamMessage
         ]),
+        settings.store.streamStatusMessage.messageStart,
+        settings.store.streamStatusMessage.messageStop,
+        settings.store.muteDeafen.muteMessage,
+        settings.store.muteDeafen.unmuteMessage,
+        settings.store.muteDeafen.deafenMessage,
+        settings.store.muteDeafen.undeafenMessage,
         settings.store.blackListMessage.enterMessage,
         settings.store.blackListMessage.leaveMessage,
-        settings.store.streamStatusMessage.messageStart,
-        settings.store.streamStatusMessage.messageStop
+        settings.store.blackListMessage.enterStreamMessage,
+        settings.store.blackListMessage.leaveStreamMessage,
+        settings.store.mutedMessage.enterMessage,
+        settings.store.mutedMessage.leaveMessage,
+        settings.store.mutedMessage.enterStreamMessage,
+        settings.store.mutedMessage.leaveStreamMessage
     ];
 
     return !messages.includes(value);

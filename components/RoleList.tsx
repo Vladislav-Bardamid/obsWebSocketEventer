@@ -43,57 +43,68 @@ export function RoleList({ roles }: GuildRoleListProps) {
 
                 return (
                     <React.Fragment key={index}>
-                        <div>
-                            <div style={{ display: "flex", alignItems: "center" }}>
-                                <Switch
-                                    hideBorder
-                                    style={{ marginBottom: 0 }}
-                                    value={!item.disabled}
-                                    onChange={e => item.disabled = !e}
-                                ></Switch>
-                                {role.icon
-                                    ? <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=24&quality=lossless`} />
-                                    : <span>&nbsp;</span>}
-                                <Forms.FormText style={{ maxWidth: "10rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{role.name}{role.name ? " - " : ""}{guild.name}</Forms.FormText>
-                                <Button
-                                    size={Button.Sizes.MIN}
-                                    onClick={() => item.deleted = true}
-                                    style={{
-                                        marginBottom: 0,
-                                        background: "none",
-                                        color: "var(--status-danger)"
-                                    }}
-                                >
-                                    <DeleteIcon />
-                                </Button>
-                                <Button
-                                    size={Button.Sizes.MIN}
-                                    onClick={() => setEditRoleId(index === editRoleId ? -1 : index)}
-                                    style={{
-                                        marginBottom: 0,
-                                        background: "none",
-                                        color: "white"
-                                    }}
-                                >
-                                    <NotesIcon />
-                                </Button>
-                                <Forms.FormText
-                                    title={item.groupNames}
-                                    style={{
-                                        flexGrow: 1,
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                    }}>{item.groupNames}</Forms.FormText>
-                            </div>
-                            {editRoleId === index && <div>
-                                <Input
-                                    placeholder="Role groups"
-                                    initialValue={item.groupNames}
-                                    onChange={e => { item.groupNames = e.trim(); setEditRoleId(-1); }}
-                                    validator={checkValidGroupNames} />
+                        {!role
+                            ? <Forms.FormText
+                                style={{
+                                    color: "var(--status-danger)"
+                                }}>Role not found</Forms.FormText>
+                            : <div>
+                                <div style={{ display: "flex", alignItems: "center" }}>
+                                    <Switch
+                                        hideBorder
+                                        style={{ marginBottom: 0 }}
+                                        value={!item.disabled}
+                                        onChange={e => item.disabled = !e}
+                                    ></Switch>
+                                    {role.icon
+                                        ? <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=24&quality=lossless`} />
+                                        : <span>&nbsp;</span>}
+                                    <Forms.FormText
+                                        style={{
+                                            maxWidth: "10rem",
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis"
+                                        }}>{role.name}{role.name ? " - " : ""}{guild.name}</Forms.FormText>
+                                    <Button
+                                        size={Button.Sizes.MIN}
+                                        onClick={() => item.deleted = true}
+                                        style={{
+                                            marginBottom: 0,
+                                            background: "none",
+                                            color: "var(--status-danger)"
+                                        }}
+                                    >
+                                        <DeleteIcon />
+                                    </Button>
+                                    <Button
+                                        size={Button.Sizes.MIN}
+                                        onClick={() => setEditRoleId(index === editRoleId ? -1 : index)}
+                                        style={{
+                                            marginBottom: 0,
+                                            background: "none",
+                                            color: "white"
+                                        }}
+                                    >
+                                        <NotesIcon />
+                                    </Button>
+                                    <Forms.FormText
+                                        title={item.groupNames}
+                                        style={{
+                                            flexGrow: 1,
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                        }}>{item.groupNames}</Forms.FormText>
+                                </div>
+                                {editRoleId === index && <div>
+                                    <Input
+                                        placeholder="Role groups"
+                                        initialValue={item.groupNames}
+                                        onChange={e => { item.groupNames = e.trim(); setEditRoleId(-1); }}
+                                        validator={checkValidGroupNames} />
+                                </div>}
                             </div>}
-                        </div>
                     </React.Fragment>);
             }
             )}
