@@ -15,6 +15,11 @@ export function UsersList({ users, title }: UserAllowedListProps) {
                 {users.map((userId, index) => {
                     const user = UserStore.getUser(userId);
 
+                    if (!user) {
+                        users.splice(index, 1);
+                        return;
+                    }
+
                     return (
                         <React.Fragment key={index}>
                             <Button size={Button.Sizes.MIN} style={{ marginBottom: 0, background: "none" }}>
