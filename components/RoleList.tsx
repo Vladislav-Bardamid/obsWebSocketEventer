@@ -8,7 +8,7 @@ import { DeleteIcon, NotesIcon } from "@components/Icons";
 import { Button, Forms, GuildStore, React, Switch } from "@webpack/common";
 import { Role } from "discord-types/general";
 
-import { checkValid } from "..";
+import { checkValidGroupNames } from "..";
 import { RoleSetting } from "../types";
 import { Input } from "./Input";
 
@@ -79,7 +79,7 @@ export function RoleList({ roles }: GuildRoleListProps) {
                                     placeholder="Role groups"
                                     initialValue={item.groupNames}
                                     onChange={e => { item.groupNames = e; setEditRoleId(-1); }}
-                                    validator={checkValid} />
+                                    validator={checkValidGroupNames} />
                             </div>}
                         </div>
                     </React.Fragment>);

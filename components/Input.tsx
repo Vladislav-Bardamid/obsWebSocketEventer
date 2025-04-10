@@ -28,6 +28,6 @@ export function Input({ initialValue, onChange, validator, placeholder, isPasswo
             spellCheck={false}
             type={isPassword ? "password" : "text"}
             style={{ ...style, border: isValid ? "" : "1px solid red" }}
-            onBlur={() => value !== initialValue && isValid && onChange(value)} />
+            onBlur={() => value !== initialValue && isValid && onChange(String(value))} />
     );
 }

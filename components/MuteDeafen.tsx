@@ -6,7 +6,7 @@
 
 import { Forms } from "@webpack/common";
 
-import { checkValid } from "..";
+import { checkMessageValid } from "..";
 import { MuteDeafenSetting } from "../types";
 import { Input } from "./Input";
 
@@ -27,12 +27,12 @@ export function MuteDeafen({ muteDeafen: muteDeaf }: MuteDeafenProps) {
                     onChange={e => {
                         muteDeaf.muteMessage = e;
                     }}
-                    validator={checkValid} /></td>
+                    validator={checkMessageValid} /></td>
                 <td><Input
                     placeholder="Unmute message"
                     initialValue={muteDeaf.unmuteMessage}
                     onChange={e => { muteDeaf.unmuteMessage = e; }}
-                    validator={checkValid} /></td>
+                    validator={checkMessageValid} /></td>
             </tr>
             <tr>
                 <th style={{ width: "1%" }}><Forms.FormText>Deaf</Forms.FormText></th>
@@ -40,12 +40,12 @@ export function MuteDeafen({ muteDeafen: muteDeaf }: MuteDeafenProps) {
                     placeholder="Deaf message"
                     initialValue={muteDeaf.deafenMessage}
                     onChange={e => { muteDeaf.deafenMessage = e; }}
-                    validator={checkValid} /></td>
+                    validator={checkMessageValid} /></td>
                 <td><Input
                     placeholder="Undeaf message"
                     initialValue={muteDeaf.undeafenMessage}
                     onChange={e => { muteDeaf.undeafenMessage = e; }}
-                    validator={checkValid} /></td>
+                    validator={checkMessageValid} /></td>
             </tr>
         </table>
     </>);

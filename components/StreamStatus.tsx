@@ -6,6 +6,7 @@
 
 import { Forms } from "@webpack/common";
 
+import { checkMessageValid } from "..";
 import { StreamStatusMessage } from "../types";
 import { Input } from "./Input";
 
@@ -23,11 +24,13 @@ export function StreamStatus({ streamStatusMessage }: StreamStatusProps) {
                 <td><Input
                     placeholder="Message start"
                     initialValue={streamStatusMessage.messageStart}
-                    onChange={e => streamStatusMessage.messageStart = e} /></td>
+                    onChange={e => streamStatusMessage.messageStart = e}
+                    validator={checkMessageValid} /></td>
                 <td><Input
                     placeholder="Message stop"
                     initialValue={streamStatusMessage.messageStop}
-                    onChange={e => streamStatusMessage.messageStop = e} /></td>
+                    onChange={e => streamStatusMessage.messageStop = e}
+                    validator={checkMessageValid} /></td>
             </tr>
         </table>
     </>);
