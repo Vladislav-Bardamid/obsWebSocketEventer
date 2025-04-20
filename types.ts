@@ -50,6 +50,11 @@ export interface VoiceState {
     selfMute: boolean;
 }
 
+export interface VoiceChatStatusMessage {
+    enterMessage: string;
+    leaveMessage: string;
+}
+
 export interface StreamStatusMessage {
     messageStart: string;
     messageStop: string;

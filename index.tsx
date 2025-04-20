@@ -33,7 +33,8 @@ import { RoleGroupList } from "./components/RoleGroupList";
 import { RoleList } from "./components/RoleList";
 import { StreamStatus } from "./components/StreamStatus";
 import { UsersList } from "./components/UsersList";
-import { MuteDeafenSetting, ObsWebSocketCredentials, RoleGroupSetting, RoleGroupSettingBase, RoleSetting, StreamStatusMessage, VoiceState } from "./types";
+import { VoiceChat } from "./components/VoiceChat";
+import { MuteDeafenSetting, ObsWebSocketCredentials, RoleGroupSetting, RoleGroupSettingBase, RoleSetting, StreamStatusMessage, VoiceChatStatusMessage, VoiceState } from "./types";
 
 const VoiceStateStore = findByPropsLazy("getVoiceStatesForChannel", "getCurrentClientVoiceChannelId");
 const MediaEngineStore = findByPropsLazy("isLocalMute", "isLocalVideoDisabled");
@@ -81,6 +82,19 @@ export const settings = definePluginSettings({
             host: "ws://127.0.0.1:4455",
             password: ""
         } as ObsWebSocketCredentials
+    },
+    voiceChatEnterMessages: {
+        type: OptionType.COMPONENT,
+        component: () => {
+            const { voiceChatEnterMessages: voiceChatEnterMessage } = settings.use(["voiceChatEnterMessages"]);
+            return (<>
+                <Forms.FormTitle tag="h4">Voice chat enter messages</Forms.FormTitle>
+                <VoiceChat messages={voiceChatEnterMessage} /></>);
+        },
+        default: {
+            enterMessage: "enter-message",
+            leaveMessage: "leave-message"
+        } as VoiceChatStatusMessage
     },
     streamStatusMessage: {
         type: OptionType.COMPONENT,
@@ -383,6 +397,7 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
 
     if (!myChanId) {
+        sendRequest(settings.store.voiceChatEnterMessages.leaveMessage);
         disposeMessages();
         return;
     }
@@ -394,6 +409,7 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
     const meEnter = voiceStates.some(x => x.userId === myId && x.channelId === myChanId);
 
     if (meEnter) {
+        sendRequest(settings.store.voiceChatEnterMessages.enterMessage);
         checkAll(myChanId);
         return;
     }
