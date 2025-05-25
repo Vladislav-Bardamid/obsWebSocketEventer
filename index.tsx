@@ -396,17 +396,20 @@ function onStreamUpdate(streamKey: string, viewerIds: string[]) {
 function onVoiceStateUpdates(voiceStates: VoiceState[]) {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
 
-    if (!myChanId) {
+    if (!myChanId) return;
+
+    const myId = UserStore.getCurrentUser().id;
+    const myState = voiceStates.find(x => x.userId === myId);
+    const meLeave = myState && myState.oldChannelId === myChanId && !myState.channelId;
+    const meEnter = myState && myState.channelId === myChanId;
+
+    if (meLeave) {
         sendRequest(settings.store.voiceChatEnterMessages.leaveMessage);
         disposeMessages();
         return;
     }
 
     if (ChannelStore.getChannel(myChanId).type === 13 /* Stage Channel */) return;
-
-    const myId = UserStore.getCurrentUser().id;
-
-    const meEnter = voiceStates.some(x => x.userId === myId && x.channelId === myChanId);
 
     if (meEnter) {
         sendRequest(settings.store.voiceChatEnterMessages.enterMessage);
@@ -655,6 +658,8 @@ export function checkMessageValid(value: string) {
             x.userEnterStreamMessage,
             x.userLeaveStreamMessage
         ]),
+        settings.store.voiceChatEnterMessages.enterMessage,
+        settings.store.voiceChatEnterMessages.leaveMessage,
         settings.store.streamStatusMessage.messageStart,
         settings.store.streamStatusMessage.messageStop,
         settings.store.muteDeafen.muteMessage,
