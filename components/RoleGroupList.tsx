@@ -6,26 +6,27 @@
 
 import { DeleteIcon, PlusIcon } from "@components/Icons";
 import { Button, Forms, GuildStore, React, Switch, useState } from "@webpack/common";
+import settings from "plugins/_core/settings";
 
-import { checkValidName, makeEmptyGroup, settings } from "..";
-import { RoleGroupSetting } from "../types";
+import { checkValidName, makeEmptyGroup } from "..";
+import { RoleGroupSetting, RoleSetting } from "../types";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
 
-export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
-    const { guildRoles } = settings.use(["guildRoles"]);
+export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProps) {
     const [isCreating, setIsCreating] = useState(false);
 
     return (
         <>
             <Forms.FormTitle tag="h4">Guild Role Groups</Forms.FormTitle>
             {roleGroups.map((item, index) => {
-                const firstRoleSetting = item.name ? guildRoles.find(x => x.groupNames.includes(item.name)) : null;
+                const firstRoleSetting = guildRoles.find(y => y.groupNames.split(" ").includes(item.name));
                 const firstRole = firstRoleSetting ? GuildStore.getRole(firstRoleSetting.guildId, firstRoleSetting.id) : null;
 
                 const roles = item.name
-                    ? guildRoles.filter(x => x.groupNames.includes(item.name))
-                        .map(x => GuildStore.getRole(x.guildId, x.id)!.name)
+                    ? guildRoles.filter(y => y.groupNames.includes(item.name))
+                        .map(x => GuildStore.getRole(x.guildId, x.id)?.name)
+                        .filter(x => x)
                         .join(" ")
                     : "";
 
@@ -78,7 +79,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                     initialValue={""}
                     style={{ width: "10rem" }}
                     onChange={e => {
-                        roleGroups.push(makeEmptyGroup(e)),
+                        settings.store.guildRoleGroups.push(makeEmptyGroup(e)),
                             setIsCreating(false);
                     }}
                     validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} /><Button
@@ -106,4 +107,5 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
 
 interface GuildRoleGroupListProps {
     roleGroups: RoleGroupSetting[];
+    guildRoles: RoleSetting[];
 }

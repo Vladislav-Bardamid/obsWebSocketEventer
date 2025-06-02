@@ -12,19 +12,16 @@ export function UsersList({ users, title }: UserAllowedListProps) {
         <>
             <Forms.FormTitle tag="h4">{title}</Forms.FormTitle>
             <Flex flexDirection="column" style={{ gap: "0.5em" }}>
-                {users.map((userId, index) => {
-                    const user = UserStore.getUser(userId);
-
-                    if (!user) {
-                        users.splice(index, 1);
-                        return;
-                    }
+                {users.map((item, index) => {
+                    const user = UserStore.getUser(item);
 
                     return (
                         <React.Fragment key={index}>
                             <Button size={Button.Sizes.MIN} style={{ marginBottom: 0, background: "none" }}>
                                 <Flex flexDirection="row" style={{ gap: 0, flexWrap: "wrap", alignItems: "center" }}>
-                                    <span>{user.username}</span>
+                                    <span style={{ color: user?.username && "var(--status-danger)" }}>{
+                                        user?.username ?? "Unknown User"
+                                    }</span>
                                     <Button
                                         size={Button.Sizes.MIN}
                                         onClick={() => users.splice(index, 1)}

@@ -144,7 +144,9 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => {
             const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
-            return (<RoleGroupList roleGroups={guildRoleGroups} />);
+            const { guildRoles } = settings.use(["guildRoles"]);
+
+            return (<RoleGroupList guildRoles={guildRoles} roleGroups={guildRoleGroups} />);
         },
         default: [] as RoleGroupSetting[]
     },
@@ -152,7 +154,8 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => {
             const { guildRoles } = settings.use(["guildRoles"]);
-            return (<RoleList roles={guildRoles} />);
+
+            return (<RoleList guildRoles={guildRoles} />);
         },
         default: [] as RoleSetting[]
     },
@@ -160,6 +163,7 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => {
             const { usersWhiteList } = settings.use(["usersWhiteList"]);
+
             return (<UsersList title="Users White List" users={usersWhiteList} />);
         },
         default: [] as string[]
@@ -168,6 +172,7 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => {
             const { usersBlackList } = settings.use(["usersBlackList"]);
+
             return (<UsersList title="Users Black List" users={usersBlackList} />);
         },
         default: [] as string[]
@@ -323,7 +328,9 @@ export default definePlugin({
 
         if (!myChanId) return;
 
-        checkAll(myChanId);
+        const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
+
+        checkAll(myChanId, myGuildId);
     },
 
     async stop() {
@@ -393,27 +400,34 @@ function onStreamUpdate(streamKey: string, viewerIds: string[]) {
     });
 }
 
+export function addRoleGroupMessage(name: string) {
+    settings.store.guildRoleGroups.push(makeEmptyGroup(name));
+}
+
 function onVoiceStateUpdates(voiceStates: VoiceState[]) {
-    const myChanId = SelectedChannelStore.getVoiceChannelId();
-
-    if (!myChanId) return;
-
     const myId = UserStore.getCurrentUser().id;
     const myState = voiceStates.find(x => x.userId === myId);
-    const meLeave = myState && myState.oldChannelId === myChanId && !myState.channelId;
-    const meEnter = myState && myState.channelId === myChanId;
 
+    const meLeave = myState && !myState.channelId;
     if (meLeave) {
         sendRequest(settings.store.voiceChatEnterMessages.leaveMessage);
         disposeMessages();
         return;
     }
 
-    if (ChannelStore.getChannel(myChanId).type === 13 /* Stage Channel */) return;
+    const myChanId = SelectedChannelStore.getVoiceChannelId();
+    if (!myChanId) return;
 
-    if (meEnter) {
+    const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
+
+    if (myState) {
+        checkAll(myChanId, myGuildId);
+
+        const meEnter = myState && !myState?.oldChannelId;
+        if (!meEnter) return;
+
         sendRequest(settings.store.voiceChatEnterMessages.enterMessage);
-        checkAll(myChanId);
+
         return;
     }
 
@@ -426,11 +440,10 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
 
     if (stateUpdates.length === 0) return;
 
-    checkAll(myChanId, stateUpdates);
+    checkAll(myChanId, myGuildId, stateUpdates);
 }
 
-function checkAll(myChanId: string, stateUpdates?: VoiceState[]) {
-    const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
+function checkAll(myChanId: string, myGuildId: string, stateUpdates?: VoiceState[]) {
     const currentUserIds = getChannelUserIds(myChanId);
 
     checkRoleGroups(currentUserIds, myGuildId, stateUpdates);
@@ -563,10 +576,6 @@ function getCheckStateUpdates(voiceStates: VoiceState[], guildId: string) {
 }
 
 function disposeMessages() {
-    const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
-
-    if (activeGroupNames.size === 0) return;
-
     if (blackListActive) {
         sendRequest(settings.store.blackListMessage.leaveMessage);
         blackListActive = false;
@@ -576,6 +585,10 @@ function disposeMessages() {
         sendRequest(settings.store.mutedMessage.leaveMessage);
         mutedActive = false;
     }
+
+    const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
+
+    if (activeGroupNames.size === 0) return;
 
     activeGroupNames.values()
         .map(x => enabledGroups.find(r => r.name === x)!.leaveMessage)
