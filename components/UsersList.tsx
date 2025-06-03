@@ -19,7 +19,7 @@ export function UsersList({ users, title }: UserAllowedListProps) {
                         <React.Fragment key={index}>
                             <Button size={Button.Sizes.MIN} style={{ marginBottom: 0, background: "none" }}>
                                 <Flex flexDirection="row" style={{ gap: 0, flexWrap: "wrap", alignItems: "center" }}>
-                                    <span style={{ color: user?.username && "var(--status-danger)" }}>{
+                                    <span style={{ color: !user?.username ? "var(--status-danger)" : undefined }}>{
                                         user?.username ?? "Unknown User"
                                     }</span>
                                     <Button
