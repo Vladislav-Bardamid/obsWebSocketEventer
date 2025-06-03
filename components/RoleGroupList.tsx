@@ -6,7 +6,6 @@
 
 import { DeleteIcon, PlusIcon } from "@components/Icons";
 import { Button, Forms, GuildStore, React, Switch, useState } from "@webpack/common";
-import settings from "plugins/_core/settings";
 
 import { checkValidName, makeEmptyGroup } from "..";
 import { RoleGroupSetting, RoleSetting } from "../types";
@@ -79,7 +78,7 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                     initialValue={""}
                     style={{ width: "10rem" }}
                     onChange={e => {
-                        settings.store.guildRoleGroups.push(makeEmptyGroup(e)),
+                        roleGroups.push(makeEmptyGroup(e)),
                             setIsCreating(false);
                     }}
                     validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} /><Button
