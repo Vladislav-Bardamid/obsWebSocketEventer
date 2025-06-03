@@ -20,7 +20,7 @@ export function UsersList({ users, title }: UserAllowedListProps) {
                             <Button size={Button.Sizes.MIN} style={{ marginBottom: 0, background: "none" }}>
                                 <Flex flexDirection="row" style={{ gap: 0, flexWrap: "wrap", alignItems: "center" }}>
                                     <span style={{ color: !user?.username ? "var(--status-danger)" : undefined }}>{
-                                        user?.username ?? "Unknown User"
+                                        user?.username ?? `Unknown User - ${item}`
                                     }</span>
                                     <Button
                                         size={Button.Sizes.MIN}
