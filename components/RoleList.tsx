@@ -5,7 +5,7 @@
  */
 
 import { DeleteIcon, NotesIcon } from "@components/Icons";
-import { Button, Forms, GuildStore, React, Switch } from "@webpack/common";
+import { Button, Forms, GuildRoleStore, GuildStore, React, Switch } from "@webpack/common";
 
 import { checkValidGroupNames } from "..";
 import { RoleSetting } from "../types";
@@ -17,7 +17,7 @@ export function RoleList({ guildRoles }: GuildRoleListProps) {
         .filter(x => !x.deleted)
         .sort((a, b) => a.guildId.localeCompare(b.guildId))
         .map(x => ({
-            role: GuildStore.getRole(x.guildId, x.id),
+            role: GuildRoleStore.getRole(x.guildId, x.id),
             setting: x
         })).sort((a, b) => a.role && b.role ? a.role.position - b.role.position : 0);
 

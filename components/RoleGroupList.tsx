@@ -5,7 +5,7 @@
  */
 
 import { DeleteIcon, PlusIcon } from "@components/Icons";
-import { Button, Forms, GuildStore, React, Switch, useState } from "@webpack/common";
+import { Button, Forms, GuildRoleStore, React, Switch, useState } from "@webpack/common";
 
 import { checkValidName, makeEmptyGroup } from "..";
 import { RoleGroupSetting, RoleSetting } from "../types";
@@ -20,11 +20,11 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
             <Forms.FormTitle tag="h4">Guild Role Groups</Forms.FormTitle>
             {roleGroups.map((item, index) => {
                 const firstRoleSetting = guildRoles.find(y => y.groupNames.split(" ").includes(item.name));
-                const firstRole = firstRoleSetting ? GuildStore.getRole(firstRoleSetting.guildId, firstRoleSetting.id) : null;
+                const firstRole = firstRoleSetting ? GuildRoleStore.getRole(firstRoleSetting.guildId, firstRoleSetting.id) : null;
 
                 const roles = item.name
                     ? guildRoles.filter(y => y.groupNames.includes(item.name))
-                        .map(x => GuildStore.getRole(x.guildId, x.id)?.name)
+                        .map(x => GuildRoleStore.getRole(x.guildId, x.id)?.name)
                         .filter(x => x)
                         .join(" ")
                     : "";

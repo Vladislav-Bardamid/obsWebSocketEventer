@@ -23,7 +23,7 @@ import { Link } from "@components/Link";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType, PluginNative, ReporterTestable } from "@utils/types";
 import { findByPropsLazy } from "@webpack";
-import { ChannelStore, Forms, GuildMemberStore, GuildStore, Menu, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
+import { ChannelStore, Forms, GuildMemberStore, GuildRoleStore, Menu, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
 import { Channel, User } from "discord-types/general";
 
 import { Credentials } from "./components/Credentials";
@@ -240,7 +240,7 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
 const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string; }) => {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
     const guildId = SelectedGuildStore.getGuildId();
-    const role = GuildStore.getRole(guildId, id);
+    const role = GuildRoleStore.getRole(guildId, id);
 
     if (!role) return;
 
@@ -280,9 +280,25 @@ const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string
 };
 
 async function sendRequest(request: string) {
+    const check = checkConnection();
+
+    if (!check) return;
+
+    await Native.makeObsMessageRequestAsync(request);
+}
+
+async function sendBrowserRequest(request: string, data: any) {
+    const check = checkConnection();
+
+    if (!check) return;
+
+    await Native.makeObsBrowserMessageRequestAsync(request, data);
+}
+
+async function checkConnection() {
     const c = settings.store.credentials;
 
-    if (!c.host || !c.password) return;
+    if (!c.host || !c.password) return false;
 
     const isConnected = await Native.isConnected();
 
@@ -290,7 +306,7 @@ async function sendRequest(request: string) {
         await connect();
     }
 
-    await Native.makeObsMessageRequestAsync(request);
+    return isConnected;
 }
 
 async function connect() {
@@ -530,8 +546,8 @@ function checkUserHasRole(userId: string, guildId: string, roleId: string) {
 }
 
 function getCheckRoleGroup(userIds: string[], guildId: string) {
-    const currentRoles = new Set(userIds.values()
-        .flatMap(x => GuildMemberStore.getMember(guildId, x).roles));
+    const users = userIds.values().map(x => GuildMemberStore.getMember(guildId, x));
+    const currentRoles = new Set(users.flatMap(x => x.roles));
 
     return (group: RoleGroupSetting, roles: RoleSetting[]) => {
         const isActive = activeGroupNames.has(group.name);
@@ -540,8 +556,12 @@ function getCheckRoleGroup(userIds: string[], guildId: string) {
         if (some === isActive) return;
 
         const message = !isActive ? group.enterMessage : group.leaveMessage;
+        const body = {
+            users: users.filter(x => roles.some(role => x.roles.includes(role.id)))
+        };
 
         sendRequest(message);
+        sendBrowserRequest(message, body);
 
         !isActive ? activeGroupNames.add(group.name) : activeGroupNames.delete(group.name);
     };
@@ -550,27 +570,30 @@ function getCheckRoleGroup(userIds: string[], guildId: string) {
 function getCheckStateUpdates(voiceStates: VoiceState[], guildId: string) {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
 
-    const joinedUserIds = voiceStates
+    const joinedUsers = voiceStates
         .filter(x => x.channelId === myChanId)
-        .map(x => x.userId);
+        .map(x => GuildMemberStore.getMember(guildId, x.userId));
 
-    const leftUserIds = voiceStates
+    const leftUsers = voiceStates
         .filter(x => x.oldChannelId === myChanId)
-        .map(x => x.userId);
+        .map(x => GuildMemberStore.getMember(guildId, x.userId));
 
-    const joinedRoles = new Set(joinedUserIds.values()
-        .flatMap(x => GuildMemberStore.getMember(guildId, x)?.roles ?? []));
-
-    const leftRoles = new Set(leftUserIds.values()
-        .flatMap(x => GuildMemberStore.getMember(guildId, x)?.roles ?? []));
+    const joinedRoles = new Set(joinedUsers.flatMap(x => x?.roles ?? []));
+    const leftRoles = new Set(leftUsers.flatMap(x => x?.roles ?? []));
 
     return (group: RoleGroupSetting, roles: RoleSetting[]) => {
         if (roles.some(role => joinedRoles.has(role.id))) {
+            const users = joinedUsers.filter(x => roles.some(role => x.roles.includes(role.id)));
+
             sendRequest(group.userEnterMessage);
+            sendBrowserRequest(group.userEnterMessage, { users });
         }
 
         if (roles.some(role => leftRoles.has(role.id))) {
+            const users = leftUsers.filter(x => roles.some(role => x.roles.includes(role.id)));
+
             sendRequest(group.userLeaveMessage);
+            sendBrowserRequest(group.userLeaveMessage, { users });
         }
     };
 }
@@ -598,26 +621,33 @@ function disposeMessages() {
 }
 
 function checkBlackList(userIds: string[]) {
-    const someBlackListUsers = userIds.some(x =>
+    const users = userIds.filter(x =>
         settings.store.usersBlackList.includes(x));
+    const someBlackListUsers = users.length > 0;
 
     if (someBlackListUsers === blackListActive) return;
 
-    sendRequest(blackListActive
+    const message = blackListActive
         ? settings.store.blackListMessage.leaveMessage
-        : settings.store.blackListMessage.enterMessage);
+        : settings.store.blackListMessage.enterMessage;
+
+    sendRequest(message);
+    sendBrowserRequest(message, { users });
 
     blackListActive = someBlackListUsers;
 }
 
 function checkMuted(userIds: string[]) {
-    const someMutedUsers = userIds.some(x => MediaEngineStore.isLocalMute(x));
+    const users = userIds.filter(x => MediaEngineStore.isLocalMute(x));
+    const someMutedUsers = users.length > 0;
 
     if (someMutedUsers === mutedActive) return;
 
-    sendRequest(mutedActive
+    const message = mutedActive
         ? settings.store.mutedMessage.leaveMessage
-        : settings.store.mutedMessage.enterMessage);
+        : settings.store.mutedMessage.enterMessage;
+
+    sendRequest(message);
 
     mutedActive = someMutedUsers;
 }

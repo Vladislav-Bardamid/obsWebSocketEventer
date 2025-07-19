@@ -19,6 +19,10 @@ export function isConnected() {
     return !!connection;
 }
 
+obs.on("Connection", async () => {
+    connection = null;
+});
+
 export async function connect(_: IpcMainInvokeEvent, host: string, password: string) {
     connection = await obs.connect(host, password);
 }
