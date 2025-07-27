@@ -22,9 +22,9 @@ import { ImageIcon } from "@components/Icons";
 import { Link } from "@components/Link";
 import { Devs } from "@utils/constants";
 import definePlugin, { OptionType, PluginNative, ReporterTestable } from "@utils/types";
+import { Channel, User } from "@vencord/discord-types";
 import { findByPropsLazy } from "@webpack";
 import { ChannelStore, Forms, GuildMemberStore, GuildRoleStore, Menu, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
-import { Channel, User } from "discord-types/general";
 
 import { Credentials } from "./components/Credentials";
 import { MessagesList } from "./components/MessagesList";
@@ -198,7 +198,7 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
 
     if (isMe) return;
 
-    const { roles } = GuildMemberStore.getMember(guildId!, user.id);
+    const { roles } = GuildMemberStore.getMember(guildId!, user.id)!;
     const { guildRoles, usersWhiteList, usersBlackList } = settings.use(["guildRoles", "usersWhiteList", "usersBlackList"]);
     const hasRole = guildRoles.some(role => roles.includes(role.id) && !role.deleted && !role.disabled);
     const userWhiteListIndex = usersWhiteList.findIndex(userId => userId === user.id);
@@ -239,7 +239,7 @@ const UserContext: NavContextMenuPatchCallback = (children, { user, guildId }: U
 
 const RoleContext: NavContextMenuPatchCallback = (children, { id }: { id: string; }) => {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
-    const guildId = SelectedGuildStore.getGuildId();
+    const guildId = SelectedGuildStore.getGuildId()!;
     const role = GuildRoleStore.getRole(guildId, id);
 
     if (!role) return;
@@ -516,7 +516,6 @@ function onStreamDelete(streamKey: string) {
 function getCheckStreamUpdates(guildId: string, viewerIds: string[]) {
     const whiteListedUserIds = viewerIds
         .filter(x => !settings.store.usersWhiteList.includes(x));
-
     const leftUserIds = [...activeUserIdsOnStream]
         .filter(x => !whiteListedUserIds.includes(x));
 
@@ -546,7 +545,7 @@ function checkUserHasRole(userId: string, guildId: string, roleId: string) {
 }
 
 function getCheckRoleGroup(userIds: string[], guildId: string) {
-    const users = userIds.values().map(x => GuildMemberStore.getMember(guildId, x));
+    const users = userIds.values().map(x => GuildMemberStore.getMember(guildId, x)!);
     const currentRoles = new Set(users.flatMap(x => x.roles));
 
     return (group: RoleGroupSetting, roles: RoleSetting[]) => {
@@ -572,11 +571,11 @@ function getCheckStateUpdates(voiceStates: VoiceState[], guildId: string) {
 
     const joinedUsers = voiceStates
         .filter(x => x.channelId === myChanId)
-        .map(x => GuildMemberStore.getMember(guildId, x.userId));
+        .map(x => GuildMemberStore.getMember(guildId, x.userId)!);
 
     const leftUsers = voiceStates
         .filter(x => x.oldChannelId === myChanId)
-        .map(x => GuildMemberStore.getMember(guildId, x.userId));
+        .map(x => GuildMemberStore.getMember(guildId, x.userId)!);
 
     const joinedRoles = new Set(joinedUsers.flatMap(x => x?.roles ?? []));
     const leftRoles = new Set(leftUsers.flatMap(x => x?.roles ?? []));
