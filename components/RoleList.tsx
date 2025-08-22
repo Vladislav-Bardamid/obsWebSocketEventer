@@ -7,7 +7,7 @@
 import { DeleteIcon, NotesIcon } from "@components/Icons";
 import { Button, Forms, GuildRoleStore, GuildStore, React, Switch } from "@webpack/common";
 
-import { checkValidGroupNames } from "..";
+import { checkValidName } from "..";
 import { RoleSetting } from "../types";
 import { Input } from "./Input";
 
@@ -23,7 +23,6 @@ export function RoleList({ guildRoles }: GuildRoleListProps) {
 
     return (
         <div>
-            <Forms.FormTitle tag="h4">Guild Roles</Forms.FormTitle>
             {roles.map((item, index) => {
                 const guild = item.role
                     ? GuildStore.getGuild(item.setting.guildId)
@@ -80,7 +79,7 @@ export function RoleList({ guildRoles }: GuildRoleListProps) {
                                 placeholder="Role groups"
                                 initialValue={item.setting.groupNames}
                                 onChange={e => { item.setting.groupNames = e; setEditRoleId(-1); }}
-                                validator={checkValidGroupNames} />
+                                validator={checkValidName} />
                         </div>}
                     </React.Fragment>);
             }

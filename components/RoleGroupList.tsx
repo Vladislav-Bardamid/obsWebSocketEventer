@@ -4,10 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Flex } from "@components/Flex";
 import { DeleteIcon, PlusIcon } from "@components/Icons";
 import { Button, Forms, GuildRoleStore, React, Switch, useState } from "@webpack/common";
 
-import { checkValidName, makeEmptyGroup } from "..";
+import { checkValidName } from "..";
 import { RoleGroupSetting, RoleSetting } from "../types";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
@@ -16,8 +17,7 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
     const [isCreating, setIsCreating] = useState(false);
 
     return (
-        <>
-            <Forms.FormTitle tag="h4">Guild Role Groups</Forms.FormTitle>
+        <Flex flexDirection="column" style={{ gap: "0.5rem" }}>
             {roleGroups.map((item, index) => {
                 const firstRoleSetting = guildRoles.find(y => y.groupNames.split(" ").includes(item.name));
                 const firstRole = firstRoleSetting ? GuildRoleStore.getRole(firstRoleSetting.guildId, firstRoleSetting.id) : null;
@@ -30,47 +30,44 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                     : "";
 
                 return (
-                    <React.Fragment key={index}>
-                        <div style={{ marginBottom: "0.5rem" }}>
-                            <div style={{ display: "flex", alignItems: "center" }}>
-                                <Switch
-                                    hideBorder
-                                    style={{ marginBottom: 0 }}
-                                    value={!item.disabled}
-                                    onChange={e => { item.disabled = !e; }}
-                                ></Switch>
-                                <Input
-                                    style={{ width: "10rem" }}
-                                    placeholder="Group name"
-                                    initialValue={item.name}
-                                    onChange={e => { item.name = e; }}
-                                    validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} />
-                                {firstRole?.icon
-                                    ? <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${firstRole.id}/${firstRole.icon}.webp?size=24&quality=lossless`} />
-                                    : <span>&nbsp;</span>}
-                                <Button
-                                    size={Button.Sizes.MIN}
-                                    onClick={() => roleGroups.splice(index, 1)}
-                                    style={{
-                                        marginBottom: 0,
-                                        background: "none",
-                                        color: "var(--status-danger)"
-                                    }}
-                                >
-                                    <DeleteIcon />
-                                </Button>
-                                {roles.length > 0 && <Forms.FormText
-                                    title={roles}
-                                    style={{
-                                        verticalAlign: "middle",
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis"
-                                    }}>{roles}</Forms.FormText>}
-                            </div>
-                            <MessagesList messages={item} />
-                        </div>
-                    </React.Fragment>);
+                    <div key={index}>
+                        <Flex style={{ alignItems: "center", gap: "0.5rem" }}>
+                            <Switch
+                                hideBorder
+                                style={{ marginBottom: 0 }}
+                                value={!item.disabled}
+                                onChange={e => { item.disabled = !e; }}
+                            ></Switch>
+                            <Input
+                                style={{ width: "10rem" }}
+                                placeholder="Group name"
+                                initialValue={item.name}
+                                onChange={e => { item.name = e.trim(); }}
+                                validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} />
+                            {firstRole?.icon &&
+                                <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${firstRole.id}/${firstRole.icon}.webp?size=24&quality=lossless`} />}
+                            <Button
+                                size={Button.Sizes.MIN}
+                                onClick={() => roleGroups.splice(index, 1)}
+                                style={{
+                                    marginBottom: 0,
+                                    background: "none",
+                                    color: "var(--status-danger)"
+                                }}
+                            >
+                                <DeleteIcon />
+                            </Button>
+                            {roles.length > 0 && <Forms.FormText
+                                title={roles}
+                                style={{
+                                    verticalAlign: "middle",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis"
+                                }}>{roles}</Forms.FormText>}
+                        </Flex>
+                        <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={["", "user"]} title={item.name} />
+                    </div>);
             })}
             <div>
                 {isCreating ? <div style={{ display: "flex", alignItems: "center" }}><Input
@@ -78,7 +75,7 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                     initialValue={""}
                     style={{ width: "10rem" }}
                     onChange={e => {
-                        roleGroups.push(makeEmptyGroup(e)),
+                        roleGroups.push({ name: "", disabled: false }),
                             setIsCreating(false);
                     }}
                     validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} /><Button
@@ -100,7 +97,7 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                         }}
                     ><PlusIcon /></Button>}
             </div>
-        </>
+        </Flex>
     );
 }
 

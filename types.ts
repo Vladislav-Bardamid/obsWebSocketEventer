@@ -17,27 +17,9 @@ export interface RoleSetting {
     groupNames: string;
 }
 
-export interface RoleGroupSetting extends RoleGroupSettingBase {
+export interface RoleGroupSetting {
     name: string;
     disabled: boolean;
-}
-
-export interface RoleGroupSettingBase {
-    enterMessage: string;
-    leaveMessage: string;
-    userEnterMessage: string;
-    userLeaveMessage: string;
-    enterStreamMessage: string;
-    leaveStreamMessage: string;
-    userEnterStreamMessage: string;
-    userLeaveStreamMessage: string;
-}
-
-export interface MuteDeafenSetting {
-    muteMessage: string;
-    unmuteMessage: string;
-    deafenMessage: string;
-    undeafenMessage: string;
 }
 
 export interface VoiceState {
@@ -48,14 +30,4 @@ export interface VoiceState {
     mute: boolean;
     selfDeaf: boolean;
     selfMute: boolean;
-}
-
-export interface VoiceChatStatusMessage {
-    enterMessage: string;
-    leaveMessage: string;
-}
-
-export interface StreamStatusMessage {
-    messageStart: string;
-    messageStop: string;
 }
