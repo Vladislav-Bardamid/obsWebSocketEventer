@@ -6,7 +6,8 @@
 
 import { Forms, TextInput } from "@webpack/common";
 
-import { createMessage } from "..";
+import { createMessage } from "../utils";
+
 
 export function MessagesList({ title, horizontalTitles, verticalTitles }: GuildMessageListProps) {
     const hasNames = horizontalTitles?.every(title => title);

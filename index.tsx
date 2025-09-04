@@ -21,8 +21,7 @@ import { Flex } from "@components/Flex";
 import { ImageIcon } from "@components/Icons";
 import { Link } from "@components/Link";
 import { Devs } from "@utils/constants";
-import definePlugin, { OptionType, PluginNative, ReporterTestable } from "@utils/types";
-import { Channel, GuildMember, User } from "@vencord/discord-types";
+import definePlugin, { OptionType, ReporterTestable } from "@utils/types";
 import { findByPropsLazy } from "@webpack";
 import { ChannelStore, Forms, GuildMemberStore, GuildRoleStore, Menu, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
 
@@ -31,18 +30,15 @@ import { MessagesList } from "./components/MessagesList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { RoleList } from "./components/RoleList";
 import { UsersList } from "./components/UsersList";
-import { ObsWebSocketCredentials, RoleGroupSetting, RoleSetting, VoiceState } from "./types";
+import { OBSWebSocketClient } from "./obsWebSocketClient";
+import { ObsWebSocketCredentials, RoleGroupSetting, RoleSetting, UserContextProps, VoiceState } from "./types";
+import { UserCheckContext } from "./userCheck/userCheckContext";
+import { createMessage, makeEmptyRole } from "./utils";
 
-const VoiceStateStore = findByPropsLazy("getVoiceStatesForChannel", "getCurrentClientVoiceChannelId");
-const MediaEngineStore = findByPropsLazy("isLocalMute", "isLocalVideoDisabled");
+export const voiceStateStore = findByPropsLazy("getVoiceStatesForChannel", "getCurrentClientVoiceChannelId");
 
-const Native = VencordNative.pluginHelpers.OBSWebSocketEventer as PluginNative<typeof import("./native")>;
-
-interface UserContextProps {
-    channel: Channel;
-    guildId?: string;
-    user: User;
-}
+const userCheckContext = new UserCheckContext();
+export const obsClient = new OBSWebSocketClient();
 
 const enterLeave = ["Enter", "Leave"];
 
@@ -51,8 +47,7 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => {
             const { credentials } = settings.use(["credentials"]);
-            return (<Forms.FormSection>
-                <Forms.FormTitle tag="h4">Credentials</Forms.FormTitle>
+            return (<Forms.FormSection title="Credentials">
                 <Credentials credentials={credentials} />
             </Forms.FormSection>);
         },
@@ -64,32 +59,26 @@ export const settings = definePluginSettings({
     messages: {
         type: OptionType.COMPONENT,
         component: () => <Flex flexDirection="column" style={{ gap: "0.5rem" }}>
-            <Forms.FormSection>
-                <Forms.FormTitle tag="h4">Voice chat enter messages</Forms.FormTitle>
+            <Forms.FormSection title="Voice chat enter messages">
                 <MessagesList verticalTitles={enterLeave} />
             </Forms.FormSection>
-            <Forms.FormSection>
-                <Forms.FormTitle tag="h4">Stream status</Forms.FormTitle>
+            <Forms.FormSection title="Stream status">
                 <MessagesList
                     verticalTitles={["Start", "Stop"]}
                     title="Stream" />
             </Forms.FormSection>
-            <Forms.FormSection>
-                <Forms.FormTitle tag="h4">Mute/Deafen</Forms.FormTitle>
+            <Forms.FormSection title="Mute/Deafen">
                 <MessagesList
                     verticalTitles={["On", "Off"]}
                     horizontalTitles={["Mute", "Deaf"]} />
             </Forms.FormSection>
-            <Forms.FormSection>
-                <Forms.FormTitle tag="h4">Muted messages</Forms.FormTitle>
+            <Forms.FormSection title="Muted messages">
                 <MessagesList verticalTitles={enterLeave} title="muted" />
             </Forms.FormSection>
-            <Forms.FormSection>
-                <Forms.FormTitle tag="h4">Some messages</Forms.FormTitle>
+            <Forms.FormSection title="Some messages">
                 <MessagesList verticalTitles={enterLeave} title="some" />
             </Forms.FormSection>
-            <Forms.FormSection>
-                <Forms.FormTitle tag="h4">Black list messages</Forms.FormTitle>
+            <Forms.FormSection title="Black list messages">
                 <MessagesList verticalTitles={enterLeave} title="blacklist" />
             </Forms.FormSection>
         </Flex>
@@ -100,9 +89,9 @@ export const settings = definePluginSettings({
             const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
             const { guildRoles } = settings.use(["guildRoles"]);
 
-            return (<div>
-                <Forms.FormTitle tag="h4">Guild Roles</Forms.FormTitle>
-                <RoleGroupList guildRoles={guildRoles} roleGroups={guildRoleGroups} /></div>);
+            return (<Forms.FormSection title="Guild Roles">
+                <RoleGroupList guildRoles={guildRoles} roleGroups={guildRoleGroups} />
+            </Forms.FormSection>);
         },
         default: [] as RoleGroupSetting[]
     },
@@ -111,9 +100,9 @@ export const settings = definePluginSettings({
         component: () => {
             const { guildRoles } = settings.use(["guildRoles"]);
 
-            return (<div>
-                <Forms.FormTitle tag="h4">Guild Role Groups</Forms.FormTitle>
-                <RoleList guildRoles={guildRoles} /></div>);
+            return (<Forms.FormSection title="Guild Role Groups">
+                <RoleList guildRoles={guildRoles} />
+            </Forms.FormSection>);
         },
         default: [] as RoleSetting[]
     },
@@ -122,9 +111,9 @@ export const settings = definePluginSettings({
         component: () => {
             const { usersWhiteList } = settings.use(["usersWhiteList"]);
 
-            return (<div>
-                <Forms.FormTitle tag="h4">Users White List</Forms.FormTitle>
-                <UsersList users={usersWhiteList} /></div>);
+            return (<Forms.FormSection title="Users White List">
+                <UsersList users={usersWhiteList} />
+            </Forms.FormSection>);
         },
         default: [] as string[]
     },
@@ -133,9 +122,9 @@ export const settings = definePluginSettings({
         component: () => {
             const { usersBlackList } = settings.use(["usersBlackList"]);
 
-            return (<div>
-                <Forms.FormTitle tag="h4">Users Black List</Forms.FormTitle>
-                <UsersList users={usersBlackList} /></div>);
+            return (<Forms.FormSection title="Users Black List">
+                <UsersList users={usersBlackList} />
+            </Forms.FormSection>);
         },
         default: [] as string[]
     }
@@ -146,31 +135,29 @@ export default definePlugin({
     description: "Make a request to OBS when something happen",
     authors: [Devs.Zorian],
     reporterTestable: ReporterTestable.None,
-    settings: settings,
+    settings,
 
     settingsAboutComponent: () => (
-        <>
-            <Forms.FormTitle tag="h3">How to use OBSWebSocketEventer</Forms.FormTitle>
+        <Forms.FormSection title="How to use OBSWebSocketEventer">
             <Forms.FormText>
                 <Link href="https://github.com/VladislavB/OBSWebSocketEventer">Follow the instructions in the GitHub repo</Link>
             </Forms.FormText>
-        </>
+        </Forms.FormSection>
     ),
 
-    async start() {
-        await connect();
+    start: async () => {
+        const connected = await obsClient.connect();
+        if (!connected) return;
 
         const myChanId = SelectedChannelStore.getVoiceChannelId();
-
         if (!myChanId) return;
 
         const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
-
-        checkAll(myChanId, myGuildId);
+        userCheckContext.processAll(myChanId, myGuildId);
     },
 
-    async stop() {
-        await Native.disconnect();
+    stop: () => {
+        obsClient.disconnect();
     },
 
     contextMenus: {
@@ -199,16 +186,10 @@ export default definePlugin({
         },
         AUDIO_SET_INPUT_VOLUME({ volume }: { volume: number; }) {
             if (volume !== 0) return;
-
             onMute();
         }
     }
 });
-
-const activeGroupNames = new Set<string>();
-let blackListActive = false;
-let someActive = false;
-let mutedActive = false;
 
 function UserContext(children, { user, guildId }: UserContextProps) {
     if (!user || !guildId) return;
@@ -237,36 +218,22 @@ function UserContext(children, { user, guildId }: UserContextProps) {
                         ? usersWhiteList
                         : usersBlackList;
 
-                    if (checked === hasRole) {
-                        list.push(user.id);
-                    } else {
-                        list.splice(hasRole ? userWhiteListIndex : userBlackListIndex, 1);
-                    }
-
-                    if (myChanId) {
-                        const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
-                        const currentUserIds = getChannelUserIds(myChanId);
-
-                        hasRole ? checkRoleGroups(currentUserIds, myGuildId) : checkBlackList(currentUserIds, myGuildId);
-                    }
+                    checked === hasRole
+                        ? list.push(user.id)
+                        : list.splice(hasRole ? userWhiteListIndex : userBlackListIndex, 1);
 
                     changeChecked(!checked);
+
+                    if (!myChanId) return;
+
+                    const guildId = ChannelStore.getChannel(myChanId).getGuildId();
+                    hasRole ? userCheckContext.processRoleGroups(myChanId, guildId) : userCheckContext.processBlackList(myChanId, guildId);
                 }}
                 icon={ImageIcon}
                 checked={checked}
             />
         </Menu.MenuGroup>
     ));
-}
-
-function makeEmptyRole(id: string, guildId: string) {
-    return {
-        id: id,
-        guildId: guildId,
-        disabled: false,
-        deleted: false,
-        groupNames: ""
-    } as RoleSetting;
 }
 
 function RoleContext(children, { id }: { id: string; }) {
@@ -296,13 +263,11 @@ function RoleContext(children, { id }: { id: string; }) {
                         settings.store.guildRoles.push(makeEmptyRole(id, guildId));
                     }
 
-                    if (myChanId) {
-                        const currentUserIds = getChannelUserIds(myChanId);
-
-                        checkRoleGroups(currentUserIds, guildId);
-                    }
-
                     changeChecked(!checked);
+
+                    if (!myChanId) return;
+
+                    userCheckContext.processRoleGroups(myChanId, guildId);
                 }}
                 icon={ImageIcon}
                 checked={checked}
@@ -311,53 +276,13 @@ function RoleContext(children, { id }: { id: string; }) {
     ));
 }
 
-async function sendRequest(request: string) {
-    const check = checkConnection();
-
-    if (!check) return;
-
-    await Native.makeObsMessageRequestAsync(request);
-}
-
-async function sendBrowserRequest(request: string, data: any) {
-    const check = checkConnection();
-
-    if (!check) return;
-
-    await Native.makeObsBrowserMessageRequestAsync(request, data);
-}
-
-async function checkConnection() {
-    const c = settings.store.credentials;
-
-    if (!c.host || !c.password) return false;
-
-    const isConnected = await Native.isConnected();
-
-    if (!isConnected) {
-        await connect();
-    }
-
-    return isConnected;
-}
-
-async function connect() {
-    const c = settings.store.credentials;
-    await Native.connect(c.host, c.password);
-}
-
-function getChannelUserIds(chanId) {
-    const myId = UserStore.getCurrentUser().id;
-
-    return Object.keys(VoiceStateStore.getVoiceStatesForChannel(chanId))
-        .filter(x => x !== myId && !settings.store.usersWhiteList.includes(x));
-}
-
 function onMute() {
+    const guildId = SelectedGuildStore.getGuildId()!;
     const myChanId = SelectedChannelStore.getVoiceChannelId();
-    const currentUserIds = getChannelUserIds(myChanId);
 
-    checkMuted(currentUserIds);
+    if (!myChanId) return;
+
+    userCheckContext.processMuted(myChanId, guildId);
 }
 
 function onVoiceStateUpdates(voiceStates: VoiceState[]) {
@@ -366,8 +291,9 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
 
     const meLeave = myState && !myState.channelId;
     if (meLeave) {
-        sendRequest(createMessage("leave"));
-        disposeMessages();
+        obsClient.sendRequest(createMessage("leave"));
+        userCheckContext.disposeAll();
+
         return;
     }
 
@@ -376,193 +302,20 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
 
     const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
 
-    if (myState) {
-        checkAll(myChanId, myGuildId);
+    const stateUpdates = myState
+        ? voiceStates.filter(x => (
+            x.channelId === myChanId ||
+            x.oldChannelId === myChanId
+        ) && x.channelId !== x.oldChannelId
+            && x.userId !== myId
+            && !settings.store.usersWhiteList.includes(x.userId))
+        : undefined;
 
-        const meEnter = myState && !myState?.oldChannelId;
-        if (!meEnter) return;
+    userCheckContext.processAll(myChanId, myGuildId, stateUpdates);
 
-        sendRequest(createMessage("enter"));
+    if (!myState || !myState?.oldChannelId) return;
 
-        return;
-    }
-
-    const stateUpdates = voiceStates.filter(x => (
-        x.channelId === myChanId ||
-        x.oldChannelId === myChanId
-    ) && x.channelId !== x.oldChannelId
-        && x.userId !== myId
-        && !settings.store.usersWhiteList.includes(x.userId));
-
-    if (stateUpdates.length === 0) return;
-
-    checkAll(myChanId, myGuildId, stateUpdates);
-}
-
-function checkAll(myChanId: string, myGuildId: string, stateUpdates?: VoiceState[]) {
-    const currentUserIds = getChannelUserIds(myChanId);
-
-    checkRoleGroups(currentUserIds, myGuildId, stateUpdates);
-    checkBlackList(currentUserIds, myGuildId, stateUpdates);
-    checkMuted(currentUserIds);
-    checkSome(currentUserIds);
-}
-
-
-function mapRolesToGroupIds(roles: RoleSetting[]) {
-    const map = {} as { [key: string]: string[]; };
-
-    roles.forEach(role => {
-        role.groupNames.split(" ").forEach(group => {
-            if (!map[group]) {
-                map[group] = [];
-            }
-            map[group].push(role.id);
-        });
-    });
-
-    return map;
-}
-
-function checkRoleGroups(userIds: string[], myGuildId: string, stateUpdates?: VoiceState[]) {
-    const enabledGroupsNames = settings.store.guildRoleGroups.filter(role => !role.disabled).map(x => x.name);
-    const mapRoles = mapRolesToGroupIds(settings.store.guildRoles.filter(role => !role.disabled && !role.deleted));
-
-    const checkRoleGroup = getCheckRoleGroup(userIds, myGuildId);
-    const checkStateUpdates = stateUpdates && getCheckStateUpdates(stateUpdates, myGuildId);
-
-    enabledGroupsNames.forEach(group => {
-        const roleIds = mapRoles[group];
-
-        checkRoleGroup(group, roleIds);
-        checkStateUpdates?.(group, roleIds);
-    });
-}
-
-export function createMessage(...params: (string | undefined)[]) {
-    return params.filter(x => x).map(x => x?.toLowerCase()).join("-");
-}
-
-function getCheckRoleGroup(userIds: string[], guildId: string) {
-    const guildMembers = userIds.map(x => GuildMemberStore.getMember(guildId, x)!);
-    const currentRoles = new Set(guildMembers.flatMap(x => x.roles));
-
-    return (groupName: string, roleIds: string[]) => {
-        const isActive = activeGroupNames.has(groupName);
-        const some = roleIds.some(id => currentRoles.has(id));
-
-        if (some === isActive) return;
-
-        const message = createMessage(groupName, !isActive ? "enter" : "leave");
-        sendRequest(message);
-
-        const users = guildMembers.filter(x => roleIds.some(id => x.roles.includes(id)));
-        sendBrowserRequest(message, { users });
-
-        !isActive ? activeGroupNames.add(groupName) : activeGroupNames.delete(groupName);
-    };
-}
-
-function getCheckStateUpdates(voiceStates: VoiceState[], guildId: string) {
-    const myChanId = SelectedChannelStore.getVoiceChannelId();
-
-    const joinedUsers = voiceStates
-        .filter(x => x.channelId === myChanId)
-        .map(x => GuildMemberStore.getMember(guildId, x.userId)!);
-
-    const leftUsers = voiceStates
-        .filter(x => x.oldChannelId === myChanId)
-        .map(x => GuildMemberStore.getMember(guildId, x.userId)!);
-
-    const joinedRoles = new Set(joinedUsers.flatMap(x => x?.roles ?? []));
-    const leftRoles = new Set(leftUsers.flatMap(x => x?.roles ?? []));
-
-    return (groupName: string, roleIds: string[]) => {
-        processRoleIdsUpdate(groupName, roleIds, joinedRoles, joinedUsers);
-        processRoleIdsUpdate(groupName, roleIds, leftRoles, leftUsers);
-    };
-}
-
-function processRoleIdsUpdate(groupName: string, roleIds: string[], roleIdSet: Set<string>, members: GuildMember[]) {
-    if (!roleIds.some(id => roleIdSet.has(id))) return;
-
-    const users = members.filter(x => roleIds.some(id => x.roles.includes(id)));
-    const message = createMessage(groupName, "user", "enter");
-
-    sendRequest(message);
-    sendBrowserRequest(message, { users });
-}
-
-function disposeMessages() {
-    if (blackListActive) {
-        sendRequest(createMessage("blacklist", "leave"));
-        blackListActive = false;
-    }
-
-    if (mutedActive) {
-        sendRequest(createMessage("muted", "leave"));
-        mutedActive = false;
-    }
-
-    const enabledGroups = settings.store.guildRoleGroups.filter(group => !group.disabled);
-
-    if (activeGroupNames.size === 0) return;
-
-    activeGroupNames.values()
-        .map(x => enabledGroups.find(r => r.name === x))
-        .forEach(x => sendRequest(createMessage(x!.name, "leave")));
-
-    activeGroupNames.clear();
-}
-
-function checkBlackList(userIds: string[], guildId: string, stateUpdates?: VoiceState[]) {
-    const users = userIds.filter(x =>
-        settings.store.usersBlackList.includes(x));
-    const someBlackListUsers = users.length > 0;
-
-    if (someBlackListUsers === blackListActive) return;
-
-    const message = blackListActive
-        ? createMessage("blacklist", "leave")
-        : createMessage("blacklist", "enter");
-
-    sendRequest(message);
-    sendBrowserRequest(message, { users });
-
-    blackListActive = someBlackListUsers;
-}
-
-function checkMuted(userIds: string[]) {
-    const users = userIds.filter(x =>
-        MediaEngineStore.isLocalMute(x) || MediaEngineStore.getLocalVolume(x) === 0
-    );
-    const someMutedUsers = users.length > 0;
-
-    if (someMutedUsers === mutedActive) return;
-
-    const message = mutedActive
-        ? createMessage("muted", "leave")
-        : createMessage("muted", "enter");
-
-    sendRequest(message);
-
-    mutedActive = someMutedUsers;
-}
-
-function checkSome(userIds: string[]) {
-    const users = userIds.filter(x => !MediaEngineStore.isLocalMute(x));
-    const someUsers = users.length > 0;
-
-    if (someUsers === someActive) return;
-
-    const message = someActive
-        ? createMessage("some", "leave")
-        : createMessage("some", "enter");
-
-    sendRequest(message);
-    sendBrowserRequest(message, { users });
-
-    someActive = someUsers;
+    obsClient.sendRequest(createMessage("enter"));
 }
 
 function onSreamCreate(streamKey: string) {
@@ -570,7 +323,7 @@ function onSreamCreate(streamKey: string) {
 
     if (!streamKey.endsWith(myId)) return;
 
-    sendRequest(createMessage("stream", "start"));
+    obsClient.sendRequest(createMessage("stream", "start"));
 }
 
 function onStreamDelete(streamKey: string) {
@@ -578,36 +331,30 @@ function onStreamDelete(streamKey: string) {
 
     if (!streamKey.endsWith(myId)) return;
 
-    sendRequest(createMessage("stream", "stop"));
+    obsClient.sendRequest(createMessage("stream", "stop"));
 }
 
 function onMuteStatusChange() {
-    const chanId = SelectedChannelStore.getVoiceChannelId()!;
-    const s = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+    const chanId = SelectedChannelStore.getVoiceChannelId();
+    if (!chanId) return;
 
-    if (!s) return;
+    const state = voiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+    const isMuted = state.mute || state.selfMute;
+    const isDeafened = state.deaf || state.selfDeaf;
 
-    const isMuted = s.mute || s.selfMute;
-    const isDeafened = s.deaf || s.selfDeaf;
-
-    sendRequest(createMessage("mute", !isMuted ? "on" : "off"));
+    obsClient.sendRequest(createMessage("mute", !isMuted ? "on" : "off"));
 
     if (!isMuted || !isDeafened) return;
 
-    sendRequest(createMessage("deaf", "off"));
+    obsClient.sendRequest(createMessage("deaf", "off"));
 }
 
 function onDeafStatusChange() {
-    const chanId = SelectedChannelStore.getVoiceChannelId()!;
-    const s = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+    const chanId = SelectedChannelStore.getVoiceChannelId();
+    if (!chanId) return;
 
-    if (!s) return;
+    const state = voiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+    const isDeafened = state.deaf || state.selfDeaf;
 
-    const isDeafened = s.deaf || s.selfDeaf;
-
-    sendRequest(createMessage("deaf", !isDeafened ? "on" : "off"));
-}
-
-export function checkValidName(value: string) {
-    return !value || /^[a-zA-Z0-9\- ]+$/.test(value);
+    obsClient.sendRequest(createMessage("deaf", !isDeafened ? "on" : "off"));
 }

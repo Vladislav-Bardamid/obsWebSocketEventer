@@ -8,8 +8,8 @@ import { Flex } from "@components/Flex";
 import { DeleteIcon, PlusIcon } from "@components/Icons";
 import { Button, Forms, GuildRoleStore, React, Switch, useState } from "@webpack/common";
 
-import { checkValidName } from "..";
 import { RoleGroupSetting, RoleSetting } from "../types";
+import { checkValidName } from "../utils";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
 

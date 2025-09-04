@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { Channel, User } from "@vencord/discord-types";
+
 export interface ObsWebSocketCredentials {
     host: string;
     password: string;
@@ -30,4 +32,10 @@ export interface VoiceState {
     mute: boolean;
     selfDeaf: boolean;
     selfMute: boolean;
+}
+
+export interface UserContextProps {
+    channel: Channel;
+    guildId?: string;
+    user: User;
 }

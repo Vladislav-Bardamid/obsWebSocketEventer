@@ -7,8 +7,8 @@
 import { DeleteIcon, NotesIcon } from "@components/Icons";
 import { Button, Forms, GuildRoleStore, GuildStore, React, Switch } from "@webpack/common";
 
-import { checkValidName } from "..";
 import { RoleSetting } from "../types";
+import { checkValidName } from "../utils";
 import { Input } from "./Input";
 
 export function RoleList({ guildRoles }: GuildRoleListProps) {
