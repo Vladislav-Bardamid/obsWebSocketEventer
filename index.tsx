@@ -289,20 +289,17 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
     const myId = UserStore.getCurrentUser().id;
     const myState = voiceStates.find(x => x.userId === myId);
 
-    const meLeave = myState && !myState.channelId;
-    if (meLeave) {
+    if (myState && !myState.channelId) {
         obsClient.sendRequest(createMessage("leave"));
         userCheckContext.disposeAll();
 
         return;
     }
 
-    const myChanId = SelectedChannelStore.getVoiceChannelId();
-    if (!myChanId) return;
-
+    const myChanId = myState?.channelId ?? SelectedChannelStore.getVoiceChannelId()!;
     const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
 
-    const stateUpdates = myState
+    const stateUpdates = !myState
         ? voiceStates.filter(x => (
             x.channelId === myChanId ||
             x.oldChannelId === myChanId
@@ -311,9 +308,11 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
             && !settings.store.usersWhiteList.includes(x.userId))
         : undefined;
 
+    if (!myState && !stateUpdates?.length) return;
+
     userCheckContext.processAll(myChanId, myGuildId, stateUpdates);
 
-    if (!myState || !myState?.oldChannelId) return;
+    if (!myState?.oldChannelId) return;
 
     obsClient.sendRequest(createMessage("enter"));
 }

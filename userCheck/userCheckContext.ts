@@ -52,6 +52,9 @@ export class UserCheckContext {
 
     disposeAll(): void {
         this.roleGroupCheck.dispose();
+        this.someCheck.dispose();
+        this.mutedCheck.dispose();
+        this.blackListCheck.dispose();
     }
 
     private getChannelUserIds(chanId) {
