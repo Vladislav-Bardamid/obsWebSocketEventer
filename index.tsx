@@ -201,7 +201,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
                 changeChecked(!checked);
 
-                if (!myChanId || !hasRole) return;
+                if (!myChanId) return;
 
                 const guildId = ChannelStore.getChannel(myChanId).getGuildId();
                 userCheckContext.processRoleGroups(myChanId, guildId);
