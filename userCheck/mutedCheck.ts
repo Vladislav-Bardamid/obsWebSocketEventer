@@ -6,35 +6,36 @@
 
 import { MediaEngineStore } from "plugins/voiceMessages/utils";
 
-import { obsClient } from "..";
-import { VoiceState } from "../types";
-import { createMessage } from "../utils";
+import { CheckType, GroupUpdateResult, VoiceState } from "../types";
 import { UserCheckStrategy } from "./userCheckStrategy";
 
 export class MutedCheck implements UserCheckStrategy {
-    private active = false;
+    process(chanId: string, guildId: string, userIds: string[], stateUpdates?: VoiceState[]) {
+        const currentUserIds = userIds.filter(x => this.checkUser(x));
+        const joinedUserIds = stateUpdates?.filter(x =>
+            x.channelId === chanId
+            && currentUserIds.includes(x.userId)
+        ).map(x => x.userId);
+        const leftUserIds = stateUpdates?.filter(x =>
+            x.oldChannelId === chanId
+            && this.checkUser(x.userId)
+        ).map(x => x.userId);
 
-    process(userIds: string[], guildId: string, stateUpdates?: VoiceState[]): void {
-        const users = userIds.filter(x =>
-            MediaEngineStore.isLocalMute(x) || MediaEngineStore.getLocalVolume(x) === 0
-        );
-        const someMutedUsers = users.length > 0;
+        const result = [{
+            checkType: CheckType.Muted,
+            status: currentUserIds.length > 0,
+            userIds: currentUserIds,
+            joinedUserIds,
+            leftUserIds
+        } as GroupUpdateResult];
 
-        if (someMutedUsers === this.active) return;
-
-        const message = this.active
-            ? createMessage("muted", "leave")
-            : createMessage("muted", "enter");
-
-        obsClient.sendRequest(message);
-
-        this.active = someMutedUsers;
+        return result;
     }
 
-    dispose(): void {
-        if (!this.active) return;
+    private checkUser(userId: string): boolean {
+        const result = MediaEngineStore.isLocalMute(userId)
+            || MediaEngineStore.getLocalVolume(userId) === 0;
 
-        obsClient.sendRequest(createMessage("muted", "leave"));
-        this.active = false;
+        return result;
     }
 }

@@ -4,36 +4,26 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { MediaEngineStore } from "plugins/voiceMessages/utils";
-
-import { obsClient } from "..";
-import { VoiceState } from "../types";
-import { createMessage } from "../utils";
+import { CheckType, GroupUpdateResult, VoiceState } from "../types";
 import { UserCheckStrategy } from "./userCheckStrategy";
 
 export class SomeCheck implements UserCheckStrategy {
-    private active = false;
+    process(guildId: string, chanId: string, userIds: string[], stateUpdates?: VoiceState[]) {
+        const joinedUserIds = stateUpdates?.filter(x =>
+            x.channelId === chanId
+        ).map(x => x.userId);
+        const leftUserIds = stateUpdates?.filter(x =>
+            x.oldChannelId === chanId
+        ).map(x => x.userId);
 
-    process(userIds: string[], guildId: string, stateUpdates?: VoiceState[]): void {
-        const users = userIds.filter(x => !MediaEngineStore.isLocalMute(x));
-        const someUsers = users.length > 0;
+        const result = [{
+            checkType: CheckType.Some,
+            status: userIds.length > 0,
+            userIds,
+            joinedUserIds,
+            leftUserIds
+        } as GroupUpdateResult];
 
-        if (someUsers === this.active) return;
-
-        const message = this.active
-            ? createMessage("some", "leave")
-            : createMessage("some", "enter");
-
-        obsClient.sendRequest(message);
-        obsClient.sendBrowserRequest(message, { users });
-
-        this.active = someUsers;
-    }
-
-    dispose(): void {
-        if (!this.active) return;
-
-        obsClient.sendRequest(createMessage("muted", "leave"));
-        this.active = false;
+        return result;
     }
 }

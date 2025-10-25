@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { RoleSetting } from "./types";
+import { RoleGroupSetting, RoleSetting } from "./types";
 
 export function createMessage(...params: (string | undefined)[]) {
     return params.filter(x => x).map(x => x?.toLowerCase()).join("-");
@@ -16,10 +16,17 @@ export function checkValidName(value: string) {
 
 export function makeEmptyRole(id: string, guildId: string) {
     return {
-        id: id,
-        guildId: guildId,
-        disabled: false,
-        deleted: false,
-        groupNames: ""
+        id,
+        guildId,
     } as RoleSetting;
+}
+
+export function makeEmptyRoleGroup(name: string) {
+    return {
+        name: name,
+        roles: [],
+        includeUserIds: [],
+        excludeUserIds: [],
+        disabled: false,
+    } as RoleGroupSetting;
 }

@@ -6,36 +6,27 @@
 
 import { Flex } from "@components/Flex";
 import { DeleteIcon, PlusIcon } from "@components/Icons";
-import { Button, Forms, GuildRoleStore, React, Switch, useState } from "@webpack/common";
+import { Switch } from "@components/Switch";
+import { Button, Forms, React, useState } from "@webpack/common";
 
-import { RoleGroupSetting, RoleSetting } from "../types";
-import { checkValidName } from "../utils";
+import { RoleGroupSetting } from "../types";
+import { checkValidName, makeEmptyRoleGroup } from "../utils";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
+import { RoleList } from "./RoleList";
+import { UsersList } from "./UsersList";
 
-export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProps) {
+export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
     const [isCreating, setIsCreating] = useState(false);
 
     return (
-        <Flex flexDirection="column" style={{ gap: "0.5rem" }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {roleGroups.map((item, index) => {
-                const firstRoleSetting = guildRoles.find(y => y.groupNames.split(" ").includes(item.name));
-                const firstRole = firstRoleSetting ? GuildRoleStore.getRole(firstRoleSetting.guildId, firstRoleSetting.id) : null;
-
-                const roles = item.name
-                    ? guildRoles.filter(y => y.groupNames.includes(item.name))
-                        .map(x => GuildRoleStore.getRole(x.guildId, x.id)?.name)
-                        .filter(x => x)
-                        .join(" ")
-                    : "";
-
                 return (
-                    <div key={index}>
+                    <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                         <Flex style={{ alignItems: "center", gap: "0.5rem" }}>
                             <Switch
-                                hideBorder
-                                style={{ marginBottom: 0 }}
-                                value={!item.disabled}
+                                checked={!item.disabled}
                                 onChange={e => { item.disabled = !e; }}
                             ></Switch>
                             <Input
@@ -44,8 +35,6 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                                 initialValue={item.name}
                                 onChange={e => { item.name = e.trim(); }}
                                 validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} />
-                            {firstRole?.icon &&
-                                <img className="vc-mentionAvatars-icon vc-mentionAvatars-role-icon" src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${firstRole.id}/${firstRole.icon}.webp?size=24&quality=lossless`} />}
                             <Button
                                 size={Button.Sizes.MIN}
                                 onClick={() => roleGroups.splice(index, 1)}
@@ -54,18 +43,19 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                                     background: "none",
                                     color: "var(--status-danger)"
                                 }}
-                            >
-                                <DeleteIcon />
-                            </Button>
-                            {roles.length > 0 && <Forms.FormText
-                                title={roles}
-                                style={{
-                                    verticalAlign: "middle",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis"
-                                }}>{roles}</Forms.FormText>}
+                            ><DeleteIcon /></Button>
                         </Flex>
+                        {item.roles.length > 0 && <div>
+                            <RoleList roles={item.roles} />
+                        </div>}
+                        {item.includeUserIds.length > 0 && <div>
+                            <Forms.FormText>Included Users:</Forms.FormText>
+                            <UsersList users={item.includeUserIds} title="Included users" />
+                        </div>}
+                        {item.excludeUserIds.length > 0 && <div>
+                            <Forms.FormText>Excluded Users:</Forms.FormText>
+                            <UsersList users={item.excludeUserIds} title="Excluded users" />
+                        </div>}
                         <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={["", "user"]} title={item.name} />
                     </div>);
             })}
@@ -75,7 +65,7 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                     initialValue={""}
                     style={{ width: "10rem" }}
                     onChange={e => {
-                        roleGroups.push({ name: "", disabled: false }),
+                        roleGroups.push(makeEmptyRoleGroup(e)),
                             setIsCreating(false);
                     }}
                     validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} /><Button
@@ -97,11 +87,10 @@ export function RoleGroupList({ guildRoles, roleGroups }: GuildRoleGroupListProp
                         }}
                     ><PlusIcon /></Button>}
             </div>
-        </Flex>
+        </div >
     );
 }
 
 interface GuildRoleGroupListProps {
     roleGroups: RoleGroupSetting[];
-    guildRoles: RoleSetting[];
 }

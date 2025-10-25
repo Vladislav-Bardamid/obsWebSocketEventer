@@ -4,37 +4,41 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { TextButton } from "@components/Button";
 import { Flex } from "@components/Flex";
 import { DeleteIcon } from "@components/Icons";
-import { Button, React, UserStore } from "@webpack/common";
+import { Button, Forms, React, UserStore } from "@webpack/common";
 
-export function UsersList({ users }: UserAllowedListProps) {
+export function UsersList({ users, title }: UserListProps) {
     return (
-        <Flex style={{ gap: "0.5em", flexWrap: "wrap" }}>
+        <Flex style={{ gap: "0.25rem", display: "flex", flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+            <Forms.FormText>{title}: </Forms.FormText>
             {users.map((item, index) => {
                 const user = UserStore.getUser(item);
 
                 return (
-                    <React.Fragment key={index}>
-                        <Button size={Button.Sizes.MIN} style={{ marginBottom: 0, background: "none" }}>
-                            <Flex flexDirection="row" style={{ gap: 0, alignItems: "center" }}>
-                                <span style={{ color: !user?.username ? "var(--status-danger)" : undefined }}>{
-                                    user?.username ?? `Unknown User (${item})`
-                                }</span>
-                                <Button
-                                    size={Button.Sizes.MIN}
-                                    onClick={() => users.splice(index, 1)}
-                                    style={{
-                                        marginBottom: 0,
-                                        background: "none",
-                                        color: "var(--status-danger)"
-                                    }}
-                                >
-                                    <DeleteIcon />
-                                </Button>
-                            </Flex>
-                        </Button>
-                    </React.Fragment>
+                    <Button
+                        key={index}
+                        size={Button.Sizes.MIN}
+                        style={{
+                            marginBottom: 0,
+                            background: "none",
+                            color: "var(--status-danger)",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "0.25rem"
+                        }}>
+                        <Forms.FormText style={{
+                            maxWidth: "10rem",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                        }}>{user.username}</Forms.FormText>
+                        <TextButton
+                            onClick={() => users.splice(index, 1)}
+                            style={{ color: "var(--status-danger)" }}
+                        ><DeleteIcon /></TextButton>
+                    </Button>
                 );
             }
             )}
@@ -42,7 +46,8 @@ export function UsersList({ users }: UserAllowedListProps) {
     );
 }
 
-interface UserAllowedListProps {
+interface UserListProps {
     users: string[];
+    title?: string;
 }
 

@@ -20,18 +20,15 @@ import { definePluginSettings } from "@api/Settings";
 import { Flex } from "@components/Flex";
 import { ImageIcon } from "@components/Icons";
 import { Link } from "@components/Link";
-import { Devs } from "@utils/constants";
 import definePlugin, { OptionType, ReporterTestable } from "@utils/types";
 import { findByPropsLazy } from "@webpack";
-import { ChannelStore, Forms, GuildMemberStore, GuildRoleStore, Menu, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
+import { ChannelStore, Forms, GuildMemberStore, Menu, React, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
 
 import { Credentials } from "./components/Credentials";
 import { MessagesList } from "./components/MessagesList";
 import { RoleGroupList } from "./components/RoleGroupList";
-import { RoleList } from "./components/RoleList";
-import { UsersList } from "./components/UsersList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
-import { ObsWebSocketCredentials, RoleGroupSetting, RoleSetting, UserContextProps, VoiceState } from "./types";
+import { ObsWebSocketCredentials, RoleGroupSetting, UserContextProps, VoiceState } from "./types";
 import { UserCheckContext } from "./userCheck/userCheckContext";
 import { createMessage, makeEmptyRole } from "./utils";
 
@@ -47,9 +44,10 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => {
             const { credentials } = settings.use(["credentials"]);
-            return (<Forms.FormSection title="Credentials">
+            return (<div>
+                <Forms.FormTitle>Credentials</Forms.FormTitle>
                 <Credentials credentials={credentials} />
-            </Forms.FormSection>);
+            </div>);
         },
         default: {
             host: "ws://127.0.0.1:4455",
@@ -59,90 +57,55 @@ export const settings = definePluginSettings({
     messages: {
         type: OptionType.COMPONENT,
         component: () => <Flex flexDirection="column" style={{ gap: "0.5rem" }}>
-            <Forms.FormSection title="Voice chat enter messages">
-                <MessagesList verticalTitles={enterLeave} />
-            </Forms.FormSection>
-            <Forms.FormSection title="Stream status">
+            <div>
+                <Forms.FormText>Stream status</Forms.FormText>
                 <MessagesList
                     verticalTitles={["Start", "Stop"]}
                     title="Stream" />
-            </Forms.FormSection>
-            <Forms.FormSection title="Mute/Deafen">
+            </div>
+            <div>
+                <Forms.FormText>Mute/Deafen</Forms.FormText>
                 <MessagesList
                     verticalTitles={["On", "Off"]}
                     horizontalTitles={["Mute", "Deaf"]} />
-            </Forms.FormSection>
-            <Forms.FormSection title="Muted messages">
+            </div>
+            <div>
+                <Forms.FormText>Muted messages</Forms.FormText>
                 <MessagesList verticalTitles={enterLeave} title="muted" />
-            </Forms.FormSection>
-            <Forms.FormSection title="Some messages">
+            </div>
+            <div>
+                <Forms.FormText>Some messages</Forms.FormText>
                 <MessagesList verticalTitles={enterLeave} title="some" />
-            </Forms.FormSection>
-            <Forms.FormSection title="Black list messages">
-                <MessagesList verticalTitles={enterLeave} title="blacklist" />
-            </Forms.FormSection>
+            </div>
         </Flex>
     },
     guildRoleGroups: {
         type: OptionType.COMPONENT,
         component: () => {
             const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
-            const { guildRoles } = settings.use(["guildRoles"]);
 
-            return (<Forms.FormSection title="Guild Roles">
-                <RoleGroupList guildRoles={guildRoles} roleGroups={guildRoleGroups} />
-            </Forms.FormSection>);
+            return (<div>
+                <Forms.FormText>Guild Roles</Forms.FormText>
+                <RoleGroupList roleGroups={guildRoleGroups} />
+            </div>);
         },
         default: [] as RoleGroupSetting[]
-    },
-    guildRoles: {
-        type: OptionType.COMPONENT,
-        component: () => {
-            const { guildRoles } = settings.use(["guildRoles"]);
-
-            return (<Forms.FormSection title="Guild Role Groups">
-                <RoleList guildRoles={guildRoles} />
-            </Forms.FormSection>);
-        },
-        default: [] as RoleSetting[]
-    },
-    usersWhiteList: {
-        type: OptionType.COMPONENT,
-        component: () => {
-            const { usersWhiteList } = settings.use(["usersWhiteList"]);
-
-            return (<Forms.FormSection title="Users White List">
-                <UsersList users={usersWhiteList} />
-            </Forms.FormSection>);
-        },
-        default: [] as string[]
-    },
-    usersBlackList: {
-        type: OptionType.COMPONENT,
-        component: () => {
-            const { usersBlackList } = settings.use(["usersBlackList"]);
-
-            return (<Forms.FormSection title="Users Black List">
-                <UsersList users={usersBlackList} />
-            </Forms.FormSection>);
-        },
-        default: [] as string[]
     }
 });
 
 export default definePlugin({
     name: "OBSWebSocketEventer",
     description: "Make a request to OBS when something happen",
-    authors: [Devs.Zorian],
+    authors: [/* Devs.Zorian */],
     reporterTestable: ReporterTestable.None,
     settings,
 
     settingsAboutComponent: () => (
-        <Forms.FormSection title="How to use OBSWebSocketEventer">
+        <div title="How to use OBSWebSocketEventer">
             <Forms.FormText>
                 <Link href="https://github.com/VladislavB/OBSWebSocketEventer">Follow the instructions in the GitHub repo</Link>
             </Forms.FormText>
-        </Forms.FormSection>
+        </div>
     ),
 
     start: async () => {
@@ -184,8 +147,7 @@ export default definePlugin({
         AUDIO_TOGGLE_LOCAL_MUTE() {
             onMute();
         },
-        AUDIO_SET_INPUT_VOLUME({ volume }: { volume: number; }) {
-            if (volume !== 0) return;
+        AUDIO_SET_INPUT_VOLUME() {
             onMute();
         }
     }
@@ -201,79 +163,93 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
     if (isMe) return;
 
+    const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
     const { roles } = GuildMemberStore.getMember(guildId!, user.id)!;
-    const { guildRoles, usersWhiteList, usersBlackList } = settings.use(["guildRoles", "usersWhiteList", "usersBlackList"]);
-    const hasRole = guildRoles.some(role => roles.includes(role.id) && !role.deleted && !role.disabled);
-    const userWhiteListIndex = usersWhiteList.findIndex(userId => userId === user.id);
-    const userBlackListIndex = usersBlackList.findIndex(userId => userId === user.id);
-    const [checked, changeChecked] = useState(() => hasRole ? userWhiteListIndex === -1 : userBlackListIndex !== -1);
+
+    const items = guildRoleGroups.map(x => ({
+        hasRole: x.roles.some(role => roles.includes(role.id)),
+        roleGroup: x
+    })).sort((a, b) => a.hasRole === b.hasRole ? 0 : a.hasRole ? -1 : 1);
+    const splitIndex = items.findIndex(x => !x.hasRole);
 
     children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuCheckboxItem
-                id="obs_event_user_context"
-                label="OBS Events"
-                action={() => {
-                    const list = hasRole
-                        ? usersWhiteList
-                        : usersBlackList;
-
-                    checked === hasRole
-                        ? list.push(user.id)
-                        : list.splice(hasRole ? userWhiteListIndex : userBlackListIndex, 1);
-
-                    changeChecked(!checked);
-
-                    if (!myChanId) return;
-
-                    const guildId = ChannelStore.getChannel(myChanId).getGuildId();
-                    hasRole ? userCheckContext.processRoleGroups(myChanId, guildId) : userCheckContext.processBlackList(myChanId, guildId);
-                }}
-                icon={ImageIcon}
-                checked={checked}
-            />
-        </Menu.MenuGroup>
+        <Menu.MenuItem id="obs-events-user-role-groups" label="OBS Events">
+            {items.length > 0
+                ? items.map((x, index) => <React.Fragment key={index}>
+                    {splitIndex === index && splitIndex > 0 && <Menu.MenuSeparator />}
+                    {createItem(x.roleGroup, x.hasRole)}
+                </React.Fragment>)
+                : "None"}
+        </Menu.MenuItem>
     ));
+
+    function createItem(roleGroup: RoleGroupSetting, hasRole: boolean) {
+        const list = hasRole
+            ? roleGroup.excludeUserIds
+            : roleGroup.includeUserIds;
+        const listIndex = list.findIndex(userId => userId === user.id);
+        const isChecked = hasRole ? listIndex === -1 : listIndex !== -1;
+        const [checked, changeChecked] = useState(isChecked);
+
+        return <Menu.MenuCheckboxItem
+            id={`obs-event-role-group-${roleGroup.name}`}
+            label={roleGroup.name}
+            action={() => {
+                checked === hasRole
+                    ? list.push(user.id)
+                    : list.splice(listIndex, 1);
+
+                changeChecked(!checked);
+
+                if (!myChanId || !hasRole) return;
+
+                const guildId = ChannelStore.getChannel(myChanId).getGuildId();
+                userCheckContext.processRoleGroups(myChanId, guildId);
+            }}
+            icon={ImageIcon}
+            checked={checked}
+        />;
+    }
 }
 
 function RoleContext(children, { id }: { id: string; }) {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
     const guildId = SelectedGuildStore.getGuildId()!;
-    const role = GuildRoleStore.getRole(guildId, id);
 
-    if (!role) return;
-
-    const roleIndex = settings.store.guildRoles.findIndex(r => r.guildId === guildId && r.id === id);
-
-    const roleSetting = settings.store.guildRoles[roleIndex];
-
-    const [checked, changeChecked] = useState(() =>
-        roleIndex !== -1 && !roleSetting.deleted);
+    const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
 
     children.splice(-1, 0, (
-        <Menu.MenuGroup>
-            <Menu.MenuCheckboxItem
-                id="obs_event_role_context"
-                label="OBS events"
-                action={() => {
-                    if (roleIndex !== -1) {
-                        roleSetting.deleted = checked;
-                    }
-                    else {
-                        settings.store.guildRoles.push(makeEmptyRole(id, guildId));
-                    }
-
-                    changeChecked(!checked);
-
-                    if (!myChanId) return;
-
-                    userCheckContext.processRoleGroups(myChanId, guildId);
-                }}
-                icon={ImageIcon}
-                checked={checked}
-            />
-        </Menu.MenuGroup>
+        <Menu.MenuItem id="obs-events-role-group" label="OBS Events">
+            {guildRoleGroups.length > 0
+                ? guildRoleGroups.map((roleGroup, index) => <React.Fragment key={index}>
+                    {createItem(roleGroup)}
+                </React.Fragment>)
+                : "None"}
+        </Menu.MenuItem>
     ));
+
+    function createItem(roleGroup: RoleGroupSetting) {
+        const roleIndex = roleGroup.roles.findIndex(r => r.guildId === guildId && r.id === id);
+        const [checked, changeChecked] = useState(() => roleIndex !== -1);
+
+        return <Menu.MenuCheckboxItem
+            id={`obs-event-role-group-${roleGroup.name}`}
+            label={roleGroup.name}
+            action={() => {
+                roleIndex !== -1
+                    ? roleGroup.roles.splice(roleIndex, 1)
+                    : roleGroup.roles.push(makeEmptyRole(id, guildId));
+
+                changeChecked(!checked);
+
+                if (!myChanId) return;
+
+                userCheckContext.processRoleGroups(myChanId, guildId);
+            }}
+            icon={ImageIcon}
+            checked={checked}
+        />;
+    }
 }
 
 function onMute() {
@@ -290,31 +266,25 @@ function onVoiceStateUpdates(voiceStates: VoiceState[]) {
     const myState = voiceStates.find(x => x.userId === myId);
 
     if (myState && !myState.channelId) {
-        obsClient.sendRequest(createMessage("leave"));
         userCheckContext.disposeAll();
-
         return;
     }
 
     const myChanId = myState?.channelId ?? SelectedChannelStore.getVoiceChannelId()!;
-    const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
+    if (!myChanId) return;
 
     const stateUpdates = !myState
         ? voiceStates.filter(x => (
-            x.channelId === myChanId ||
-            x.oldChannelId === myChanId
+            x.channelId === myChanId
+            || x.oldChannelId === myChanId
         ) && x.channelId !== x.oldChannelId
-            && x.userId !== myId
-            && !settings.store.usersWhiteList.includes(x.userId))
+            && x.userId !== myId)
         : undefined;
 
     if (!myState && !stateUpdates?.length) return;
 
+    const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
     userCheckContext.processAll(myChanId, myGuildId, stateUpdates);
-
-    if (!myState?.oldChannelId) return;
-
-    obsClient.sendRequest(createMessage("enter"));
 }
 
 function onSreamCreate(streamKey: string) {

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Channel, User } from "@vencord/discord-types";
+import { Channel } from "@vencord/discord-types";
 
 export interface ObsWebSocketCredentials {
     host: string;
@@ -14,13 +14,13 @@ export interface ObsWebSocketCredentials {
 export interface RoleSetting {
     id: string;
     guildId: string;
-    disabled: boolean;
-    deleted: boolean;
-    groupNames: string;
 }
 
 export interface RoleGroupSetting {
     name: string;
+    roles: RoleSetting[];
+    includeUserIds: string[];
+    excludeUserIds: string[];
     disabled: boolean;
 }
 
@@ -38,4 +38,38 @@ export interface UserContextProps {
     channel: Channel;
     guildId?: string;
     user: User;
+}
+
+interface User {
+    id: string;
+    username: string;
+    discriminator: string;
+    avatar: string | null;
+}
+
+export interface GroupUpdateResult {
+    checkType: CheckType;
+    source?: string;
+    status: boolean;
+    userIds: string[];
+    joinedUserIds?: string[];
+    leftUserIds?: string[];
+}
+
+export interface UserJoinResult {
+    groupName: string;
+    status: boolean;
+    userIds: string[];
+}
+
+export interface CheckCacheEntry {
+    checkType: CheckType;
+    source?: string;
+    status: boolean;
+}
+
+export enum CheckType {
+    RoleGroups,
+    Some,
+    Muted,
 }
