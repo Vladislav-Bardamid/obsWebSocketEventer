@@ -28,12 +28,16 @@ export function UsersList({ users, title }: UserListProps) {
                             alignItems: "center",
                             gap: "0.25rem"
                         }}>
-                        <Forms.FormText style={{
-                            maxWidth: "10rem",
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                        }}>{user.username}</Forms.FormText>
+                        {user
+                            ? <Forms.FormText
+                                title={user.username}
+                                style={{
+                                    maxWidth: "10rem",
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                }}>{user.username}</Forms.FormText>
+                            : <span style={{ color: "var(--status-danger)", marginLeft: "0.5rem" }}>Unable to load user ({item})</span>}
                         <TextButton
                             onClick={() => users.splice(index, 1)}
                             style={{ color: "var(--status-danger)" }}

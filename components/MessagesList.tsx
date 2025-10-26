@@ -11,6 +11,7 @@ import { createMessage } from "../utils";
 
 export function MessagesList({ title, horizontalTitles, verticalTitles }: GuildMessageListProps) {
     const hasNames = horizontalTitles?.every(title => title);
+
     return (<table style={{ width: "100%" }}>
         <tr>
             {horizontalTitles && hasNames && <th></th>}

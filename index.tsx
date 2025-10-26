@@ -138,6 +138,9 @@ export default definePlugin({
         VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceState[]; }) {
             onVoiceStateUpdates(voiceStates);
         },
+        RELATIONSHIP_UPDATE() {
+            onRelationShipUpdate();
+        },
         AUDIO_TOGGLE_SELF_MUTE() {
             onMuteStatusChange();
         },
@@ -152,6 +155,16 @@ export default definePlugin({
         }
     }
 });
+
+function onRelationShipUpdate() {
+    const myId = UserStore.getCurrentUser().id;
+    const myChanId = SelectedChannelStore.getVoiceChannelId();
+    const guildId = SelectedGuildStore.getGuildId();
+
+    if (!guildId || !myChanId) return;
+
+    userCheckContext.processBlocked(myChanId, guildId);
+}
 
 function UserContext(children, { user, guildId }: UserContextProps) {
     if (!user || !guildId) return;
@@ -169,7 +182,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
     const items = guildRoleGroups.map(x => ({
         hasRole: x.roles.some(role => roles.includes(role.id)),
         roleGroup: x
-    })).sort((a, b) => a.hasRole === b.hasRole ? 0 : a.hasRole ? -1 : 1);
+    })).sort((a, b) => Number(a.hasRole) - Number(b.hasRole));
     const splitIndex = items.findIndex(x => !x.hasRole);
 
     children.splice(-1, 0, (

@@ -72,4 +72,5 @@ export enum CheckType {
     RoleGroups,
     Some,
     Muted,
+    Blocked
 }

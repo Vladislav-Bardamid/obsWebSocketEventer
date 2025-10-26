@@ -22,7 +22,10 @@ export function RoleList({ roles }: RoleListProps) {
         <Forms.FormText>Roles:</Forms.FormText>
         {roleSettings.map((item, index) => {
             const { role, setting } = item;
-            const guildName = GuildStore.getGuild(item.setting.guildId).name;
+
+            const guildName = GuildStore.getGuild(setting.guildId).name;
+            const title = `${role.name}(${guildName})`;
+
             return (
                 <Button
                     key={index}
@@ -37,7 +40,14 @@ export function RoleList({ roles }: RoleListProps) {
                     }}>
                     {role ? <>
                         {role.icon && <img src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=24&quality=lossless`} />}
-                        <Forms.FormText style={{ maxWidth: "10rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginLeft: role.icon ? "0.5rem" : "0" }}>{role.name}{role.name ? " - " : ""}{guildName}</Forms.FormText>
+                        <Forms.FormText
+                            title={title}
+                            style={{
+                                maxWidth: "10rem",
+                                whiteSpace: "nowrap",
+                                overflow: "hidden",
+                                textOverflow: "ellipsis"
+                            }}>{role.name}({guildName})</Forms.FormText>
                     </> : <span style={{ color: "var(--status-danger)", marginLeft: "0.5rem" }}>Unable to load role ({setting.id})</span>}
                     <TextButton
                         onClick={() => roles.splice(index, 1)}

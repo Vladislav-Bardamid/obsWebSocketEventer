@@ -7,7 +7,7 @@
 import { Flex } from "@components/Flex";
 import { DeleteIcon, PlusIcon } from "@components/Icons";
 import { Switch } from "@components/Switch";
-import { Button, Forms, React, useState } from "@webpack/common";
+import { Button, React, useState } from "@webpack/common";
 
 import { RoleGroupSetting } from "../types";
 import { checkValidName, makeEmptyRoleGroup } from "../utils";
@@ -45,17 +45,12 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                                 }}
                             ><DeleteIcon /></Button>
                         </Flex>
-                        {item.roles.length > 0 && <div>
-                            <RoleList roles={item.roles} />
-                        </div>}
-                        {item.includeUserIds.length > 0 && <div>
-                            <Forms.FormText>Included Users:</Forms.FormText>
-                            <UsersList users={item.includeUserIds} title="Included users" />
-                        </div>}
-                        {item.excludeUserIds.length > 0 && <div>
-                            <Forms.FormText>Excluded Users:</Forms.FormText>
-                            <UsersList users={item.excludeUserIds} title="Excluded users" />
-                        </div>}
+                        {item.roles.length > 0
+                            && <RoleList roles={item.roles} />}
+                        {item.includeUserIds.length > 0
+                            && <UsersList users={item.includeUserIds} title="Included users" />}
+                        {item.excludeUserIds.length > 0
+                            && <UsersList users={item.excludeUserIds} title="Excluded users" />}
                         <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={["", "user"]} title={item.name} />
                     </div>);
             })}

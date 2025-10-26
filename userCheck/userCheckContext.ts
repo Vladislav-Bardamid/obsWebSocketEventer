@@ -9,6 +9,7 @@ import { UserStore } from "@webpack/common";
 import { obsClient, voiceStateStore } from "..";
 import { CheckCacheEntry, CheckType, VoiceState } from "../types";
 import { createMessage } from "../utils";
+import { BlockedCheck } from "./blockedCheck";
 import { MutedCheck } from "./mutedCheck";
 import { RoleGroupCheck } from "./roleGroupCheck";
 import { SomeCheck } from "./someCheck";
@@ -19,6 +20,7 @@ export class UserCheckContext {
         [CheckType.RoleGroups]: new RoleGroupCheck(),
         [CheckType.Some]: new SomeCheck(),
         [CheckType.Muted]: new MutedCheck(),
+        [CheckType.Blocked]: new BlockedCheck()
     };
     private results = [] as CheckCacheEntry[];
 
@@ -36,6 +38,10 @@ export class UserCheckContext {
 
     processMuted(chanId: string, guildId: string, stateUpdates?: VoiceState[]) {
         this.process(chanId, guildId, stateUpdates, CheckType.Muted);
+    }
+
+    processBlocked(chanId: string, guildId: string, stateUpdates?: VoiceState[]) {
+        this.process(chanId, guildId, stateUpdates, CheckType.Blocked);
     }
 
     disposeAll() {
@@ -92,6 +98,8 @@ export class UserCheckContext {
                 return "some";
             case CheckType.Muted:
                 return "muted";
+            case CheckType.Blocked:
+                return "block";
             default:
                 return "";
         }
