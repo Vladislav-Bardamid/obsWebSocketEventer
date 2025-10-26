@@ -74,6 +74,10 @@ export const settings = definePluginSettings({
                 <MessagesList verticalTitles={enterLeave} title="muted" />
             </div>
             <div>
+                <Forms.FormText>Blocked messages</Forms.FormText>
+                <MessagesList verticalTitles={enterLeave} title="blocked" />
+            </div>
+            <div>
                 <Forms.FormText>Some messages</Forms.FormText>
                 <MessagesList verticalTitles={enterLeave} title="some" />
             </div>
@@ -138,8 +142,14 @@ export default definePlugin({
         VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceState[]; }) {
             onVoiceStateUpdates(voiceStates);
         },
+        RELATIONSHIP_ADD() {
+            onRelationshipUpdate();
+        },
+        RELATIONSHIP_REMOVE() {
+            onRelationshipUpdate();
+        },
         RELATIONSHIP_UPDATE() {
-            onRelationShipUpdate();
+            onRelationshipUpdate();
         },
         AUDIO_TOGGLE_SELF_MUTE() {
             onMuteStatusChange();
@@ -156,8 +166,7 @@ export default definePlugin({
     }
 });
 
-function onRelationShipUpdate() {
-    const myId = UserStore.getCurrentUser().id;
+function onRelationshipUpdate() {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
     const guildId = SelectedGuildStore.getGuildId();
 

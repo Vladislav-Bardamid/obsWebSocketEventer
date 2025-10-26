@@ -99,7 +99,7 @@ export class UserCheckContext {
             case CheckType.Muted:
                 return "muted";
             case CheckType.Blocked:
-                return "block";
+                return "blocked";
             default:
                 return "";
         }
