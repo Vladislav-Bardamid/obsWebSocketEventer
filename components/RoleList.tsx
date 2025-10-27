@@ -22,33 +22,41 @@ export function RoleList({ roles }: RoleListProps) {
         <Forms.FormText>Roles:</Forms.FormText>
         {roleSettings.map((item, index) => {
             const { role, setting } = item;
+            const error = "Unable to load role";
 
-            const guildName = GuildStore.getGuild(setting.guildId).name;
-            const title = `${role.name}(${guildName})`;
+            const guildName = role
+                ? `(${GuildStore.getGuild(setting.guildId).name})`
+                : error;
+            const title = role
+                ? [role.name, `(${guildName})`].filter(Boolean).join(" ")
+                : error;
 
             return (
                 <Button
                     key={index}
+                    title={title}
                     size={Button.Sizes.MIN}
                     style={{
                         marginBottom: 0,
+                        maxWidth: "9rem",
+                        whiteSpace: "nowrap",
                         background: "none",
-                        color: "var(--status-danger)",
+                        color: role ? undefined : "var(--status-danger)",
                         display: "flex",
                         alignItems: "center",
                         gap: "0.25rem"
                     }}>
-                    {role ? <>
-                        {role.icon && <img src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=24&quality=lossless`} />}
-                        <Forms.FormText
-                            title={title}
-                            style={{
-                                maxWidth: "10rem",
-                                whiteSpace: "nowrap",
-                                overflow: "hidden",
-                                textOverflow: "ellipsis"
-                            }}>{role.name}({guildName})</Forms.FormText>
-                    </> : <span style={{ color: "var(--status-danger)", marginLeft: "0.5rem" }}>Unable to load role ({setting.id})</span>}
+                    {role?.icon && <img src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=16&quality=lossless`} />}
+                    {role?.name && <span style={{
+                        flex: 1,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}>{role.name}</span>}
+                    <span style={{
+                        minWidth: "2rem",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                    }}>{guildName}</span>
                     <TextButton
                         onClick={() => roles.splice(index, 1)}
                         style={{ color: "var(--status-danger)" }}
@@ -56,7 +64,7 @@ export function RoleList({ roles }: RoleListProps) {
                 </Button>
             );
         })}
-    </div>;
+    </div >;
 }
 
 interface RoleListProps {

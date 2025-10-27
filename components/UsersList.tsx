@@ -15,29 +15,29 @@ export function UsersList({ users, title }: UserListProps) {
             <Forms.FormText>{title}: </Forms.FormText>
             {users.map((item, index) => {
                 const user = UserStore.getUser(item);
+                const title = user
+                    ? user.username
+                    : "Unable to load user";
 
                 return (
                     <Button
                         key={index}
+                        title={title}
                         size={Button.Sizes.MIN}
                         style={{
                             marginBottom: 0,
+                            maxWidth: "9rem",
+                            textOverflow: "ellipsis",
+                            color: user ? undefined : "var(--status-danger)",
                             background: "none",
-                            color: "var(--status-danger)",
                             display: "flex",
                             alignItems: "center",
                             gap: "0.25rem"
                         }}>
-                        {user
-                            ? <Forms.FormText
-                                title={user.username}
-                                style={{
-                                    maxWidth: "10rem",
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                }}>{user.username}</Forms.FormText>
-                            : <span style={{ color: "var(--status-danger)", marginLeft: "0.5rem" }}>Unable to load user ({item})</span>}
+                        <span style={{
+                            whiteSpace: "nowrap",
+                            overflow: "hidden"
+                        }}>{title}</span>
                         <TextButton
                             onClick={() => users.splice(index, 1)}
                             style={{ color: "var(--status-danger)" }}
