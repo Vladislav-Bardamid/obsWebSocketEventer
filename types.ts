@@ -24,7 +24,7 @@ export interface RoleGroupSetting {
     disabled: boolean;
 }
 
-export interface VoiceState {
+export interface VoiceStateChangeEvent {
     userId: string;
     channelId?: string;
     oldChannelId?: string;

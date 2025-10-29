@@ -6,20 +6,16 @@
 
 import { RelationshipStore } from "@webpack/common";
 
-import { CheckType, GroupUpdateResult, VoiceState } from "../types";
-import { UserCheckStrategy } from "./userCheckStrategy";
+import { CheckType, GroupUpdateResult } from "../types";
+import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
-export class BlockedCheck implements UserCheckStrategy {
-    process(chanId: string, guildId: string, userIds: string[], stateUpdates?: VoiceState[]) {
+export class BlockedCheck implements VoiceCheckStrategy {
+    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
         const currentUserIds = userIds.filter(x => this.checkUser(x));
-        const joinedUserIds = stateUpdates?.filter(x =>
-            x.channelId === chanId
-            && currentUserIds.includes(x.userId)
-        ).map(x => x.userId);
-        const leftUserIds = stateUpdates?.filter(x =>
-            x.oldChannelId === chanId
-            && this.checkUser(x.userId)
-        ).map(x => x.userId);
+        joinedUserIds = joinedUserIds?.filter(x =>
+            currentUserIds.includes(x));
+        leftUserIds = leftUserIds?.filter(x =>
+            this.checkUser(x));
 
         const result = [{
             checkType: CheckType.Blocked,

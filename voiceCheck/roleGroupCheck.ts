@@ -10,24 +10,25 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { GuildMemberStore } from "@webpack/common";
+import { ChannelStore, GuildMemberStore } from "@webpack/common";
 
 import { settings } from "..";
-import { CheckType, GroupUpdateResult, VoiceState } from "../types";
-import { RoleGroupSetting } from "./../types";
-import { UserCheckStrategy } from "./userCheckStrategy";
+import { CheckType, GroupUpdateResult } from "../types";
+import { RoleGroupSetting } from "../types";
+import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
-export class RoleGroupCheck implements UserCheckStrategy {
-    process(chanId: string, guildId: string, userIds: string[], stateUpdates?: VoiceState[]) {
+export class RoleGroupCheck implements VoiceCheckStrategy {
+    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
         const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
+        const guildId = ChannelStore.getChannel(chanId)?.guild_id;
 
-        const checkRoleGroup = this.getCheckRoleGroup(chanId, guildId, userIds, stateUpdates);
+        const checkRoleGroup = this.getCheckRoleGroup(guildId, userIds, joinedUserIds, leftUserIds);
         const groupUpdates = enabledGroups.map(group => checkRoleGroup(group));
 
         return groupUpdates;
     }
 
-    private getCheckRoleGroup(chanId: string, guildId: string, userIds: string[], stateUpdates?: VoiceState[]) {
+    private getCheckRoleGroup(guildId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
         return (group: RoleGroupSetting) => {
             const roleIds = group.roles
                 .filter(x => x.guildId === guildId)
@@ -42,16 +43,13 @@ export class RoleGroupCheck implements UserCheckStrategy {
             );
             const currentUserIds = [...includedUserIds, ...filteredUserIds];
 
-            const joinedUserIds = stateUpdates?.filter(x =>
-                x.channelId === chanId
-                && currentUserIds.includes(x.userId)
-            ).map(x => x.userId);
-            const leftUserIds = stateUpdates?.filter(x =>
-                x.oldChannelId === chanId
-                && !group.excludeUserIds.includes(x.userId)
-                && (includedUserIds.includes(x.userId)
-                    || this.checkUser(x.userId, roleIds, guildId))
-            ).map(x => x.userId);
+            joinedUserIds = joinedUserIds?.filter(x =>
+                currentUserIds.includes(x));
+            leftUserIds = leftUserIds?.filter(x =>
+                !group.excludeUserIds.includes(x)
+                && (includedUserIds.includes(x)
+                    || this.checkUser(x, roleIds, guildId))
+            );
 
             const result = {
                 checkType: CheckType.RoleGroups,

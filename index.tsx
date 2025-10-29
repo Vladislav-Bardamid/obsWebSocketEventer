@@ -21,20 +21,18 @@ import { Flex } from "@components/Flex";
 import { ImageIcon } from "@components/Icons";
 import { Link } from "@components/Link";
 import definePlugin, { OptionType, ReporterTestable } from "@utils/types";
-import { findByPropsLazy } from "@webpack";
-import { ChannelStore, Forms, GuildMemberStore, Menu, React, SelectedChannelStore, SelectedGuildStore, UserStore, useState } from "@webpack/common";
+import { VoiceState } from "@vencord/discord-types";
+import { Forms, GuildMemberStore, Menu, React, SelectedChannelStore, SelectedGuildStore, UserStore, useState, VoiceStateStore } from "@webpack/common";
 
 import { Credentials } from "./components/Credentials";
 import { MessagesList } from "./components/MessagesList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
-import { ObsWebSocketCredentials, RoleGroupSetting, UserContextProps, VoiceState } from "./types";
-import { UserCheckContext } from "./userCheck/userCheckContext";
+import { ObsWebSocketCredentials, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
 import { createMessage, makeEmptyRole } from "./utils";
+import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
-export const voiceStateStore = findByPropsLazy("getVoiceStatesForChannel", "getCurrentClientVoiceChannelId");
-
-const userCheckContext = new UserCheckContext();
+const userCheckContext = new VoiceCheckContext();
 export const obsClient = new OBSWebSocketClient();
 
 const enterLeave = ["Enter", "Leave"];
@@ -116,11 +114,7 @@ export default definePlugin({
         const connected = await obsClient.connect();
         if (!connected) return;
 
-        const myChanId = SelectedChannelStore.getVoiceChannelId();
-        if (!myChanId) return;
-
-        const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
-        userCheckContext.processAll(myChanId, myGuildId);
+        userCheckContext.processAll();
     },
 
     stop: () => {
@@ -139,7 +133,7 @@ export default definePlugin({
         STREAM_DELETE({ streamKey }: { streamKey: string; }) {
             onStreamDelete(streamKey);
         },
-        VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceState[]; }) {
+        VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceStateChangeEvent[]; }) {
             onVoiceStateUpdates(voiceStates);
         },
         RELATIONSHIP_ADD() {
@@ -172,15 +166,13 @@ function onRelationshipUpdate() {
 
     if (!guildId || !myChanId) return;
 
-    userCheckContext.processBlocked(myChanId, guildId);
+    userCheckContext.processBlocked();
 }
 
 function UserContext(children, { user, guildId }: UserContextProps) {
     if (!user || !guildId) return;
 
     const myId = UserStore.getCurrentUser().id;
-    const myChanId = SelectedChannelStore.getVoiceChannelId();
-
     const isMe = myId === user.id;
 
     if (isMe) return;
@@ -191,16 +183,17 @@ function UserContext(children, { user, guildId }: UserContextProps) {
     const items = guildRoleGroups.map(x => ({
         hasRole: x.roles.some(role => roles.includes(role.id)),
         roleGroup: x
-    })).sort((a, b) => Number(a.hasRole) - Number(b.hasRole));
+    })).sort((a, b) => Number(b.hasRole) - Number(a.hasRole));
     const splitIndex = items.findIndex(x => !x.hasRole);
 
     children.splice(-1, 0, (
         <Menu.MenuItem id="obs-events-user-role-groups" label="OBS Events">
             {items.length > 0
-                ? items.map((x, index) => <React.Fragment key={index}>
-                    {splitIndex === index && splitIndex > 0 && <Menu.MenuSeparator />}
-                    {createItem(x.roleGroup, x.hasRole)}
-                </React.Fragment>)
+                ? items.map((x, index) =>
+                    <React.Fragment key={index}>
+                        {splitIndex === index && splitIndex > 0 && <Menu.MenuSeparator />}
+                        {createItem(x.roleGroup, x.hasRole)}
+                    </React.Fragment>)
                 : "None"}
         </Menu.MenuItem>
     ));
@@ -223,10 +216,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
                 changeChecked(!checked);
 
-                if (!myChanId) return;
-
-                const guildId = ChannelStore.getChannel(myChanId).getGuildId();
-                userCheckContext.processRoleGroups(myChanId, guildId);
+                userCheckContext.processRoleGroups();
             }}
             icon={ImageIcon}
             checked={checked}
@@ -235,7 +225,6 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 }
 
 function RoleContext(children, { id }: { id: string; }) {
-    const myChanId = SelectedChannelStore.getVoiceChannelId();
     const guildId = SelectedGuildStore.getGuildId()!;
 
     const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
@@ -243,9 +232,10 @@ function RoleContext(children, { id }: { id: string; }) {
     children.splice(-1, 0, (
         <Menu.MenuItem id="obs-events-role-group" label="OBS Events">
             {guildRoleGroups.length > 0
-                ? guildRoleGroups.map((roleGroup, index) => <React.Fragment key={index}>
-                    {createItem(roleGroup)}
-                </React.Fragment>)
+                ? guildRoleGroups.map((roleGroup, index) =>
+                    <React.Fragment key={index}>
+                        {createItem(roleGroup)}
+                    </React.Fragment>)
                 : "None"}
         </Menu.MenuItem>
     ));
@@ -264,9 +254,7 @@ function RoleContext(children, { id }: { id: string; }) {
 
                 changeChecked(!checked);
 
-                if (!myChanId) return;
-
-                userCheckContext.processRoleGroups(myChanId, guildId);
+                userCheckContext.processRoleGroups();
             }}
             icon={ImageIcon}
             checked={checked}
@@ -275,38 +263,11 @@ function RoleContext(children, { id }: { id: string; }) {
 }
 
 function onMute() {
-    const guildId = SelectedGuildStore.getGuildId()!;
-    const myChanId = SelectedChannelStore.getVoiceChannelId();
-
-    if (!myChanId) return;
-
-    userCheckContext.processMuted(myChanId, guildId);
+    userCheckContext.processMuted();
 }
 
-function onVoiceStateUpdates(voiceStates: VoiceState[]) {
-    const myId = UserStore.getCurrentUser().id;
-    const myState = voiceStates.find(x => x.userId === myId);
-
-    if (myState && !myState.channelId) {
-        userCheckContext.disposeAll();
-        return;
-    }
-
-    const myChanId = myState?.channelId ?? SelectedChannelStore.getVoiceChannelId()!;
-    if (!myChanId) return;
-
-    const stateUpdates = !myState
-        ? voiceStates.filter(x => (
-            x.channelId === myChanId
-            || x.oldChannelId === myChanId
-        ) && x.channelId !== x.oldChannelId
-            && x.userId !== myId)
-        : undefined;
-
-    if (!myState && !stateUpdates?.length) return;
-
-    const myGuildId = ChannelStore.getChannel(myChanId).getGuildId();
-    userCheckContext.processAll(myChanId, myGuildId, stateUpdates);
+function onVoiceStateUpdates(voiceStates: VoiceStateChangeEvent[]) {
+    userCheckContext.processVoiceStates(voiceStates);
 }
 
 function onSreamCreate(streamKey: string) {
@@ -329,7 +290,7 @@ function onMuteStatusChange() {
     const chanId = SelectedChannelStore.getVoiceChannelId();
     if (!chanId) return;
 
-    const state = voiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+    const state = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
     const isMuted = state.mute || state.selfMute;
     const isDeafened = state.deaf || state.selfDeaf;
 
@@ -344,7 +305,7 @@ function onDeafStatusChange() {
     const chanId = SelectedChannelStore.getVoiceChannelId();
     if (!chanId) return;
 
-    const state = voiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
+    const state = VoiceStateStore.getVoiceStateForChannel(chanId) as VoiceState;
     const isDeafened = state.deaf || state.selfDeaf;
 
     obsClient.sendRequest(createMessage("deaf", !isDeafened ? "on" : "off"));
