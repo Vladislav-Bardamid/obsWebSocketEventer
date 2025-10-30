@@ -63,10 +63,14 @@ export class PatternCheck implements VoiceCheckStrategy {
                     .filter(x => x.guildId === guildId)
                     .map(x => x.id);
 
-                const result = group.includeUserIds.includes(userId)
-                    && !group.excludeUserIds.includes(userId)
-                    && GuildMemberStore.getMember(guildId, userId)!.roles
-                        .some(roleId => roleIds.includes(roleId));
+                const isIncluded = (exclude
+                    ? group.excludeUserIds
+                    : group.includeUserIds
+                ).includes(userId);
+                if (isIncluded) return exclude;
+
+                const result = GuildMemberStore.getMember(guildId, userId)!.roles
+                    .some(roleId => roleIds.includes(roleId));
 
                 return result !== exclude;
             });

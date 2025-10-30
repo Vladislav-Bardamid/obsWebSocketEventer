@@ -36,6 +36,10 @@ export class VoiceCheckContext {
         this.process(CheckType.RoleGroups);
     }
 
+    processPatterns() {
+        this.process(CheckType.Patterns);
+    }
+
     processSome() {
         this.process(CheckType.Some);
     }
@@ -57,7 +61,8 @@ export class VoiceCheckContext {
 
     processVoiceStates(voiceStates: VoiceStateChangeEvent[]) {
         const myId = UserStore.getCurrentUser().id;
-        const myState = voiceStates.find(x => x.userId === myId);
+        const myState = voiceStates.find(x => x.userId === myId
+            && x.channelId !== x.oldChannelId);
 
         if (myState) {
             myState.channelId
@@ -113,6 +118,8 @@ export class VoiceCheckContext {
 
             x.joinedUserIds && this.sendMessage(messageType, statusMessage, x.joinedUserIds, x.source);
             x.leftUserIds && this.sendMessage(messageType, statusMessage, x.leftUserIds, x.source);
+
+            this.results.set([x.checkType, x.source], x.status);
         });
     }
 

@@ -13,11 +13,11 @@ export function RoleList({ roles }: RoleListProps) {
     if (roles.length === 0) return;
 
     const roleSettings = roles
-        .sort((a, b) => a.guildId.localeCompare(b.guildId))
-        .map(x => ({
+        .map((x, i) => ({
             role: GuildRoleStore.getRole(x.guildId, x.id),
-            setting: x
-        })).sort((a, b) => a.role && b.role ? a.role.position - b.role.position : 0);
+            setting: x,
+            index: i
+        })).sort((a, b) => a.role.position - b.role.position);
 
     return <Flex flexDirection="row" style={{
         gap: "0.25rem",
@@ -66,7 +66,7 @@ export function RoleList({ roles }: RoleListProps) {
                     <Button
                         size={Button.Sizes.MIN}
                         look={Button.Looks.LINK}
-                        onClick={() => roleSettings.splice(index, 1)}
+                        onClick={() => roles.splice(item.index, 1)}
                         style={{ color: "var(--status-danger)" }}
                     ><DeleteIcon /></Button>
                 </Button>

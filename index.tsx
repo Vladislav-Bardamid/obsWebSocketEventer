@@ -231,6 +231,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
                 changeChecked(!checked);
 
                 userCheckContext.processRoleGroups();
+                userCheckContext.processPatterns();
             }}
             icon={ImageIcon}
             checked={checked}
@@ -269,6 +270,7 @@ function RoleContext(children, { id }: { id: string; }) {
                 changeChecked(!checked);
 
                 userCheckContext.processRoleGroups();
+                userCheckContext.processPatterns();
             }}
             icon={ImageIcon}
             checked={checked}
