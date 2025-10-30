@@ -4,13 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { TextButton } from "@components/Button";
-import { DeleteIcon } from "@components/index";
+import { DeleteIcon, Flex } from "@components/index";
 import { Button, Forms, GuildRoleStore, GuildStore, React } from "@webpack/common";
 
 import { RoleSetting } from "../types";
 
 export function RoleList({ roles }: RoleListProps) {
+    if (roles.length === 0) return;
+
     const roleSettings = roles
         .sort((a, b) => a.guildId.localeCompare(b.guildId))
         .map(x => ({
@@ -18,7 +19,11 @@ export function RoleList({ roles }: RoleListProps) {
             setting: x
         })).sort((a, b) => a.role && b.role ? a.role.position - b.role.position : 0);
 
-    return <div style={{ gap: "0.25rem", display: "flex", flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+    return <Flex flexDirection="row" style={{
+        gap: "0.25rem",
+        alignItems: "center",
+        flexWrap: "wrap"
+    }}>
         <Forms.FormText>Roles:</Forms.FormText>
         {roleSettings.map((item, index) => {
             const { role, setting } = item;
@@ -41,9 +46,9 @@ export function RoleList({ roles }: RoleListProps) {
                         maxWidth: "9rem",
                         whiteSpace: "nowrap",
                         background: "none",
-                        color: role ? undefined : "var(--status-danger)",
                         display: "flex",
                         alignItems: "center",
+                        overflow: "hidden",
                         gap: "0.25rem"
                     }}>
                     {role?.icon && <img src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=16&quality=lossless`} />}
@@ -51,20 +56,23 @@ export function RoleList({ roles }: RoleListProps) {
                         flex: 1,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
+                        color: role ? undefined : "var(--status-danger)"
                     }}>{role.name}</span>}
                     <span style={{
                         minWidth: "2rem",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                     }}>{guildName}</span>
-                    <TextButton
-                        onClick={() => roles.splice(index, 1)}
+                    <Button
+                        size={Button.Sizes.MIN}
+                        look={Button.Looks.LINK}
+                        onClick={() => roleSettings.splice(index, 1)}
                         style={{ color: "var(--status-danger)" }}
-                    ><DeleteIcon /></TextButton>
+                    ><DeleteIcon /></Button>
                 </Button>
             );
         })}
-    </div >;
+    </Flex >;
 }
 
 interface RoleListProps {

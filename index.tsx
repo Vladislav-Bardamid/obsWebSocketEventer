@@ -26,9 +26,10 @@ import { Forms, GuildMemberStore, Menu, React, SelectedChannelStore, SelectedGui
 
 import { Credentials } from "./components/Credentials";
 import { MessagesList } from "./components/MessagesList";
+import { PatternList } from "./components/PatternList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
-import { ObsWebSocketCredentials, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
+import { ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
 import { createMessage, makeEmptyRole } from "./utils";
 import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
@@ -36,6 +37,7 @@ const userCheckContext = new VoiceCheckContext();
 export const obsClient = new OBSWebSocketClient();
 
 const enterLeave = ["Enter", "Leave"];
+export const emptyUser = ["", "User"];
 
 export const settings = definePluginSettings({
     credentials: {
@@ -68,16 +70,16 @@ export const settings = definePluginSettings({
                     horizontalTitles={["Mute", "Deaf"]} />
             </div>
             <div>
+                <Forms.FormText>Some messages</Forms.FormText>
+                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="some" />
+            </div>
+            <div>
                 <Forms.FormText>Muted messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} title="muted" />
+                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="muted" />
             </div>
             <div>
                 <Forms.FormText>Blocked messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} title="blocked" />
-            </div>
-            <div>
-                <Forms.FormText>Some messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} title="some" />
+                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="blocked" />
             </div>
         </Flex>
     },
@@ -87,11 +89,23 @@ export const settings = definePluginSettings({
             const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
 
             return (<div>
-                <Forms.FormText>Guild Roles</Forms.FormText>
+                <Forms.FormText>Guild roles</Forms.FormText>
                 <RoleGroupList roleGroups={guildRoleGroups} />
             </div>);
         },
         default: [] as RoleGroupSetting[]
+    },
+    patterns: {
+        type: OptionType.COMPONENT,
+        component: () => {
+            const { patterns } = settings.use(["patterns"]);
+
+            return (<div>
+                <Forms.FormText>Group patterns</Forms.FormText>
+                <PatternList patterns={patterns} />
+            </div>);
+        },
+        default: [] as PatternSetting[]
     }
 });
 

@@ -4,14 +4,18 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { RoleGroupSetting, RoleSetting } from "./types";
+import { PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
 
 export function createMessage(...params: (string | undefined)[]) {
     return params.filter(x => x).map(x => x?.toLowerCase()).join("-");
 }
 
 export function checkValidName(value: string) {
-    return !value || /^[a-zA-Z0-9\- ]+$/.test(value);
+    return !value || /^[a-zA-Z0-9-]+$/.test(value);
+}
+
+export function checkValidPattern(value: string) {
+    return !value || /^[a-zA-Z0-9- ]+$/.test(value);
 }
 
 export function makeEmptyRole(id: string, guildId: string) {
@@ -29,4 +33,12 @@ export function makeEmptyRoleGroup(name: string) {
         excludeUserIds: [],
         disabled: false,
     } as RoleGroupSetting;
+}
+
+export function makeEmptyPattern(name: string) {
+    return {
+        name: name,
+        pattern: "",
+        disabled: false,
+    } as PatternSetting;
 }

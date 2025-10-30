@@ -10,19 +10,17 @@ import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
 import { emptyUser } from "..";
-import { RoleGroupSetting } from "../types";
-import { checkValidName, makeEmptyRoleGroup } from "../utils";
+import { PatternSetting as PatternSetting } from "../types";
+import { checkValidName, checkValidPattern, makeEmptyPattern } from "../utils";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
-import { RoleList } from "./RoleList";
-import { UsersList } from "./UsersList";
 
-export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
+export function PatternList({ patterns }: PatternListProps) {
     const [isCreating, setIsCreating] = useState(false);
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-            {roleGroups.map((item, index) => {
+            {patterns.map((item, index) => {
                 return (
                     <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
                         <Flex style={{ alignItems: "center", gap: "0.25rem" }}>
@@ -32,13 +30,13 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                             ></Switch>
                             <Input
                                 style={{ width: "10rem" }}
-                                placeholder="Group name"
+                                placeholder="Pattern name"
                                 initialValue={item.name}
                                 onChange={e => { item.name = e.trim(); }}
-                                validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} />
+                                validator={e => checkValidName(e) && !patterns.find(x => x.name === e)} />
                             <Button
                                 size={Button.Sizes.MIN}
-                                onClick={() => roleGroups.splice(index, 1)}
+                                onClick={() => patterns.splice(index, 1)}
                                 style={{
                                     marginBottom: 0,
                                     background: "none",
@@ -46,22 +44,24 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                                 }}
                             ><DeleteIcon /></Button>
                         </Flex>
-                        <RoleList roles={item.roles} />
-                        <UsersList users={item.includeUserIds} title="Included users" />
-                        <UsersList users={item.excludeUserIds} title="Excluded users" />
+                        <Input
+                            placeholder="pattern"
+                            initialValue={item.pattern}
+                            onChange={e => { item.pattern = e.trim(); }}
+                            validator={e => checkValidPattern(e)} />
                         {!item.disabled && <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />}
                     </div>);
             })}
             <div>
                 {isCreating ? <div style={{ display: "flex", alignItems: "center" }}><Input
-                    placeholder="Group name"
+                    placeholder="Pattern name"
                     initialValue={""}
                     style={{ width: "10rem" }}
                     onChange={e => {
-                        roleGroups.push(makeEmptyRoleGroup(e)),
+                        patterns.push(makeEmptyPattern(e)),
                             setIsCreating(false);
                     }}
-                    validator={e => checkValidName(e) && !roleGroups.find(x => x.name === e)} /><Button
+                    validator={e => checkValidName(e) && !patterns.find(x => x.name === e)} /><Button
                         size={Button.Sizes.MIN}
                         onClick={() => { setIsCreating(false); }}
                         style={{
@@ -84,6 +84,6 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
     );
 }
 
-interface GuildRoleGroupListProps {
-    roleGroups: RoleGroupSetting[];
+interface PatternListProps {
+    patterns: PatternSetting[];
 }

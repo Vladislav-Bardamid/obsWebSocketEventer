@@ -13,10 +13,11 @@
 import { SelectedChannelStore, UserStore, VoiceStateStore } from "@webpack/common";
 
 import { obsClient } from "..";
-import { CheckCacheEntry, CheckType, VoiceStateChangeEvent } from "../types";
+import { CheckType, VoiceStateChangeEvent } from "../types";
 import { createMessage } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
 import { MutedCheck } from "./mutedCheck";
+import { PatternCheck } from "./patternCheck";
 import { RoleGroupCheck } from "./roleGroupCheck";
 import { SomeCheck } from "./someCheck";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
@@ -24,11 +25,12 @@ import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 export class VoiceCheckContext {
     private strategies: { [key in CheckType]: VoiceCheckStrategy } = {
         [CheckType.RoleGroups]: new RoleGroupCheck(),
+        [CheckType.Patterns]: new PatternCheck(),
         [CheckType.Some]: new SomeCheck(),
         [CheckType.Muted]: new MutedCheck(),
         [CheckType.Blocked]: new BlockedCheck()
     };
-    private results = [] as CheckCacheEntry[];
+    private results = new Map<[CheckType, string?], boolean>();
 
     processRoleGroups() {
         this.process(CheckType.RoleGroups);
@@ -59,13 +61,14 @@ export class VoiceCheckContext {
 
         if (myState) {
             myState.channelId
-                ? this.processAllStrategies(myState?.channelId)
+                ? this.processAllStrategies(myState.channelId)
                 : this.disposeAll();
 
             return;
         }
 
         const myChanId = SelectedChannelStore.getVoiceChannelId()!;
+        if (!myChanId) return;
 
         const stateUpdates = voiceStates.filter(x =>
             x.channelId !== x.oldChannelId
@@ -99,26 +102,14 @@ export class VoiceCheckContext {
     private processStrategy(strategy: VoiceCheckStrategy, chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
         const result = strategy.process(chanId, userIds, joinedUserIds, leftUserIds);
         result.forEach(x => {
-            const entry = this.results.find(r => r.checkType === x.checkType && r.source === x.source);
+            const entry = this.results.get([x.checkType, x.source])!;
 
-            if (!entry) {
-                const newEntry = {
-                    checkType: x.checkType,
-                    source: x.source,
-                    status: x.status,
-                };
-                this.results.push(newEntry);
-            }
-            else if (x.status !== entry.status) {
-                entry.status = x.status;
-            }
-            else return;
+            if (entry === x.status) return;
 
             const messageType = this.getCheckMessageType(x.checkType);
             const statusMessage = x.status ? "enter" : "leave";
-            this.sendMessage(messageType, statusMessage, x.userIds, x.source);
 
-            if (!entry) return;
+            this.sendMessage(messageType, statusMessage, x.userIds, x.source);
 
             x.joinedUserIds && this.sendMessage(messageType, statusMessage, x.joinedUserIds, x.source);
             x.leftUserIds && this.sendMessage(messageType, statusMessage, x.leftUserIds, x.source);
@@ -131,11 +122,11 @@ export class VoiceCheckContext {
     }
 
     private disposeAll() {
-        this.results.forEach(x => {
-            const messageType = this.getCheckMessageType(x.checkType);
-            obsClient.sendRequest(createMessage(messageType, x.source, "leave"));
+        this.results.keys().forEach(x => {
+            const messageType = this.getCheckMessageType(x[0]);
+            obsClient.sendRequest(createMessage(messageType, x[1], "leave"));
         });
-        this.results = [];
+        this.results.clear();
     }
 
     private getChannelUserIds(chanId): string[] {

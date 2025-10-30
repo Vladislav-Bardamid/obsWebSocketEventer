@@ -13,8 +13,7 @@
 import { ChannelStore, GuildMemberStore } from "@webpack/common";
 
 import { settings } from "..";
-import { CheckType, GroupUpdateResult } from "../types";
-import { RoleGroupSetting } from "../types";
+import { CheckType, GroupUpdateResult, RoleGroupSetting } from "../types";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class RoleGroupCheck implements VoiceCheckStrategy {
@@ -39,8 +38,7 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
             const filteredUserIds = userIds.filter(x =>
                 !group.excludeUserIds.includes(x)
                 && !includedUserIds.includes(x)
-                && this.checkUser(x, roleIds, guildId)
-            );
+                && this.checkUser(x, roleIds, guildId));
             const currentUserIds = [...includedUserIds, ...filteredUserIds];
 
             joinedUserIds = joinedUserIds?.filter(x =>
@@ -48,8 +46,7 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
             leftUserIds = leftUserIds?.filter(x =>
                 !group.excludeUserIds.includes(x)
                 && (includedUserIds.includes(x)
-                    || this.checkUser(x, roleIds, guildId))
-            );
+                    || this.checkUser(x, roleIds, guildId)));
 
             const result = {
                 checkType: CheckType.RoleGroups,

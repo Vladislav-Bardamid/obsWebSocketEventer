@@ -10,6 +10,8 @@ import { DeleteIcon } from "@components/Icons";
 import { Button, Forms, React, UserStore } from "@webpack/common";
 
 export function UsersList({ users, title }: UserListProps) {
+    if (users.length === 0) return;
+
     return (
         <Flex style={{ gap: "0.25rem", display: "flex", flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
             <Forms.FormText>{title}: </Forms.FormText>

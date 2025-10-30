@@ -4,7 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Forms, TextInput } from "@webpack/common";
+import { Span } from "@components/Span";
+import { TextInput } from "@webpack/common";
 
 import { createMessage } from "../utils";
 
@@ -16,11 +17,11 @@ export function MessagesList({ title, horizontalTitles, verticalTitles }: GuildM
         <tr>
             {horizontalTitles && hasNames && <th></th>}
             {verticalTitles.map((title: string) => <th key={title}>
-                <Forms.FormText>{title}</Forms.FormText></th>)}
+                <Span size="xs">{title}</Span></th>)}
         </tr>
         {(horizontalTitles ?? [""]).map((horizontalTitle: string) => <tr key={horizontalTitle}>
             {horizontalTitles && hasNames && <th style={{ width: "1%", verticalAlign: "middle", textAlign: "right" }}>
-                <Forms.FormText>{horizontalTitle}</Forms.FormText>
+                <Span size="xs">{horizontalTitle}</Span>
             </th>}
             {verticalTitles.map(verticalTitle => {
                 const value = createMessage(title, horizontalTitle, verticalTitle);

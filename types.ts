@@ -24,6 +24,12 @@ export interface RoleGroupSetting {
     disabled: boolean;
 }
 
+export interface PatternSetting {
+    name: string;
+    pattern: string;
+    disabled: boolean;
+}
+
 export interface VoiceStateChangeEvent {
     userId: string;
     channelId?: string;
@@ -62,14 +68,9 @@ export interface UserJoinResult {
     userIds: string[];
 }
 
-export interface CheckCacheEntry {
-    checkType: CheckType;
-    source?: string;
-    status: boolean;
-}
-
 export enum CheckType {
     RoleGroups,
+    Patterns,
     Some,
     Muted,
     Blocked
