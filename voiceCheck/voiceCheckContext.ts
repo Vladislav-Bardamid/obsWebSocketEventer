@@ -59,15 +59,19 @@ export class VoiceCheckContext {
         this.processAllStrategies(myChanId);
     }
 
+    private myLastChannelId?: string;
+
     processVoiceStates(voiceStates: VoiceStateChangeEvent[]) {
         const myId = UserStore.getCurrentUser().id;
         const myState = voiceStates.find(x => x.userId === myId
-            && x.channelId !== x.oldChannelId);
+            && x.channelId !== this.myLastChannelId);
 
         if (myState) {
             myState.channelId
                 ? this.processAllStrategies(myState.channelId)
                 : this.disposeAll();
+
+            this.myLastChannelId = myState.channelId;
 
             return;
         }
