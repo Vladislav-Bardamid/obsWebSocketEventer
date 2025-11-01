@@ -10,8 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 import { IpcMainInvokeEvent } from "electron";
-import OBSWebSocket from "obs-websocket-js";
-import { JsonObject } from "type-fest";
+import OBSWebSocket, { OBSRequestTypes } from "obs-websocket-js";
 
 const obs = new OBSWebSocket();
 
@@ -40,12 +39,8 @@ export async function disconnect() {
     await obs.disconnect();
 }
 
-export async function sendRequestAsync(_: IpcMainInvokeEvent, requestType: "CallVendorRequest", requestData?: {
-    vendorName: string;
-    requestType: string;
-    requestData?: JsonObject | undefined;
-} | undefined) {
+export async function sendRequestAsync<Type extends keyof OBSRequestTypes>(_: IpcMainInvokeEvent, requestType: Type, requestData?: OBSRequestTypes[Type]) {
     if (!connection) return null;
 
-    return obs.call(requestType, requestData);
+    return await obs.call(requestType, requestData);
 }

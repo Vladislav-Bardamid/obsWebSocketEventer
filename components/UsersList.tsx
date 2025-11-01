@@ -17,9 +17,7 @@ export function UsersList({ users, title }: UserListProps) {
             <Forms.FormText>{title}: </Forms.FormText>
             {users.map((item, index) => {
                 const user = UserStore.getUser(item);
-                const title = user
-                    ? user.username
-                    : "Unable to load user";
+                const title = user?.username ?? "Unable to load user";
 
                 return (
                     <Button

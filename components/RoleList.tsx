@@ -17,7 +17,7 @@ export function RoleList({ roles }: RoleListProps) {
             role: GuildRoleStore.getRole(x.guildId, x.id),
             setting: x,
             index: i
-        })).sort((a, b) => a.role.position - b.role.position);
+        })).sort((a, b) => a.role?.position - b.role?.position);
 
     return <Flex flexDirection="row" style={{
         gap: "0.25rem",
@@ -29,17 +29,13 @@ export function RoleList({ roles }: RoleListProps) {
             const { role, setting } = item;
             const error = "Unable to load role";
 
-            const guildName = role
-                ? `(${GuildStore.getGuild(setting.guildId).name})`
-                : error;
-            const title = role
-                ? [role.name, `(${guildName})`].filter(Boolean).join(" ")
-                : error;
+            const guidlName = role && GuildStore.getGuild(setting.guildId).name;
+            const title = role?.name ?? "Unable to load role";
 
             return (
                 <Button
                     key={index}
-                    title={title}
+                    title={role && `${title} (${guidlName})`}
                     size={Button.Sizes.MIN}
                     style={{
                         marginBottom: 0,
@@ -52,17 +48,17 @@ export function RoleList({ roles }: RoleListProps) {
                         gap: "0.25rem"
                     }}>
                     {role?.icon && <img src={`${location.protocol}//${window.GLOBAL_ENV.CDN_HOST}/role-icons/${role.id}/${role.icon}.webp?size=16&quality=lossless`} />}
-                    {role?.name && <span style={{
+                    <span style={{
                         flex: 1,
                         overflow: "hidden",
                         textOverflow: "ellipsis",
                         color: role ? undefined : "var(--status-danger)"
-                    }}>{role.name}</span>}
-                    <span style={{
+                    }}>{title}</span>
+                    {role && <span style={{
                         minWidth: "2rem",
                         overflow: "hidden",
                         textOverflow: "ellipsis",
-                    }}>{guildName}</span>
+                    }}>({guidlName})</span>}
                     <Button
                         size={Button.Sizes.MIN}
                         look={Button.Looks.LINK}
