@@ -14,7 +14,7 @@ import { ChannelStore } from "@webpack/common";
 
 import { settings } from "..";
 import { CheckType, GroupUpdateResult, PatternSetting } from "../types";
-import { checkSelfMuted, checkUserForRoles } from "../utils";
+import { checkSelfMuted as checkUserIsSelfMuted, checkUserForRoles, checkUserIsBlocked, checkUserIsFriend } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class PatternCheck implements VoiceCheckStrategy {
@@ -23,7 +23,7 @@ export class PatternCheck implements VoiceCheckStrategy {
         const guildId = ChannelStore.getChannel(chanId)?.guild_id;
 
         const checkPattern = this.getCheckPattern(guildId, userIds, joinedUserIds, leftUserIds);
-        const groupUpdates = enabledPatterns.map(pattern => checkPattern(pattern));
+        const groupUpdates = enabledPatterns.map(checkPattern);
 
         return groupUpdates;
     }
@@ -54,7 +54,7 @@ export class PatternCheck implements VoiceCheckStrategy {
     private checkUser(userId: string, guildId: string, setting: PatternSetting, joinedUserIds?: string[], leftUserIds?: string[]) {
         const groupRules = setting.pattern.split(" ");
         const groupRuleCheck = this.getRuleCheck(userId, guildId, joinedUserIds, leftUserIds);
-        const result = groupRules.every(groupRule => groupRuleCheck(groupRule));
+        const result = groupRules.every(groupRuleCheck);
 
         return result;
     }
@@ -67,11 +67,11 @@ export class PatternCheck implements VoiceCheckStrategy {
             const rules = groupName.split(":");
             groupName = rules.pop()!;
 
-            const ruleStatus = this.checkRules(userId, rules, joinedUserIds, leftUserIds);
-            if (!ruleStatus) return exclude;
+            const prefixStatus = this.checkPrefix(userId, rules, joinedUserIds, leftUserIds);
+            if (!prefixStatus) return exclude;
 
-            if (groupName === "muted")
-                return checkSelfMuted(userId);
+            const isRule = this.checkRule(groupName, userId);
+            if (isRule !== undefined) return isRule !== exclude;
 
             const group = settings.store.guildRoleGroups.find(group => group.name === groupName);
             if (!group) return exclude;
@@ -92,15 +92,27 @@ export class PatternCheck implements VoiceCheckStrategy {
         };
     }
 
-    private checkRules(userId: string, rules: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    private checkPrefix(userId: string, rules: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
         for (const rule of rules) {
             if (rule === ServiceRules.Join
-                && joinedUserIds
-                && !joinedUserIds.includes(userId)
+                && !joinedUserIds?.includes(userId)
             ) return false;
         }
 
         return true;
+    }
+
+    private checkRule(groupName: string, userId: string) {
+        switch (groupName) {
+            case CheckType.Muted:
+                return checkUserIsSelfMuted(userId);
+            case CheckType.Friends:
+                return checkUserIsFriend(userId);
+            case CheckType.Blocked:
+                return checkUserIsBlocked(userId);
+            default:
+                return;
+        }
     }
 }
 
