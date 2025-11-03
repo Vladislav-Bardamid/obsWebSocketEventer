@@ -6,6 +6,7 @@
 
 import { Flex } from "@components/Flex";
 import { DeleteIcon, PlusIcon } from "@components/Icons";
+import { Span } from "@components/Span";
 import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
@@ -18,6 +19,9 @@ import { MessagesList } from "./MessagesList";
 export function PatternList({ patterns }: PatternListProps) {
     const [isCreating, setIsCreating] = useState(false);
 
+    const nameTitle = "Must start with a letter, can include letters or numbers, and may contain hyphens between parts";
+    const patternTitle = "One or more names allowed, each may start with a hyphen for negation and be separated by spaces.";
+
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {patterns.map((item, index) => {
@@ -29,6 +33,7 @@ export function PatternList({ patterns }: PatternListProps) {
                                 onChange={e => { item.disabled = !e; }}
                             ></Switch>
                             <Input
+                                title={nameTitle}
                                 style={{ width: "10rem" }}
                                 placeholder="Pattern name"
                                 initialValue={item.name}
@@ -45,11 +50,15 @@ export function PatternList({ patterns }: PatternListProps) {
                             ><DeleteIcon /></Button>
                         </Flex>
                         <Input
+                            title={patternTitle}
                             placeholder="pattern"
                             initialValue={item.pattern}
                             onChange={e => { item.pattern = e.trim(); }}
                             validator={e => checkValidPattern(e)} />
-                        {!item.disabled && <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />}
+                        {!item.disabled && <>
+                            <Span size="xs">Messages:</Span>
+                            <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />
+                        </>}
                     </div>);
             })}
             <div>

@@ -6,6 +6,7 @@
 
 import { Flex } from "@components/Flex";
 import { DeleteIcon, PlusIcon } from "@components/Icons";
+import { Span } from "@components/Span";
 import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
@@ -20,6 +21,8 @@ import { UsersList } from "./UsersList";
 export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
     const [isCreating, setIsCreating] = useState(false);
 
+    const nameTitle = "Must start with a letter, can include letters or numbers, and may contain hyphens between parts (not at start or end).";
+
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
             {roleGroups.map((item, index) => {
@@ -31,6 +34,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                                 onChange={e => { item.disabled = !e; }}
                             ></Switch>
                             <Input
+                                title={nameTitle}
                                 style={{ width: "10rem" }}
                                 placeholder="Group name"
                                 initialValue={item.name}
@@ -49,7 +53,10 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                         <RoleList roles={item.roles} />
                         <UsersList users={item.includeUserIds} title="Included users" />
                         <UsersList users={item.excludeUserIds} title="Excluded users" />
-                        {!item.disabled && <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />}
+                        {!item.disabled && <>
+                            <Span size="xs">Messages:</Span>
+                            <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />
+                        </>}
                     </div>);
             })}
             <div>

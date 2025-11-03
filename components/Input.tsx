@@ -6,7 +6,8 @@
 
 import { TextInput, useState } from "@webpack/common";
 
-export function Input({ initialValue, onChange, validator, placeholder, isPassword, style }: {
+export function Input({ title, initialValue, onChange, validator, placeholder, isPassword, style }: {
+    title?: string;
     placeholder: string;
     initialValue: string | number;
     onChange(value: string): void;
@@ -19,6 +20,7 @@ export function Input({ initialValue, onChange, validator, placeholder, isPasswo
 
     return (
         <TextInput
+            title={title}
             placeholder={placeholder}
             value={value}
             onChange={e => {

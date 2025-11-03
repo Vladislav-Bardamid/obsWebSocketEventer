@@ -4,40 +4,27 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { Span } from "@components/Span";
+import { Flex } from "@components/Flex";
 import { TextInput } from "@webpack/common";
 
 import { createMessage } from "../utils";
 
 
 export function MessagesList({ title, horizontalTitles, verticalTitles }: GuildMessageListProps) {
-    const hasNames = horizontalTitles?.every(title => title);
-
-    return (<table style={{ width: "100%" }}>
-        <tr>
-            {horizontalTitles && hasNames && <th></th>}
-            {verticalTitles.map((title: string) => <th key={title}>
-                <Span size="xs">{title}</Span></th>)}
-        </tr>
-        {(horizontalTitles ?? [""]).map((horizontalTitle: string) => <tr key={horizontalTitle}>
-            {horizontalTitles && hasNames && <th style={{ width: "1%", verticalAlign: "middle", textAlign: "right" }}>
-                <Span size="xs">{horizontalTitle}</Span>
-            </th>}
+    return (<div>
+        {(horizontalTitles ?? [""]).map((horizontalTitle: string) => <Flex key={horizontalTitle} style={{ gap: 0 }}>
             {verticalTitles.map(verticalTitle => {
                 const value = createMessage(title, horizontalTitle, verticalTitle);
                 const placeholder = [title, verticalTitle, horizontalTitle].filter(x => x).join(" ");
 
-                return (<td key={verticalTitle}>
-                    <TextInput
-                        key={value}
-                        placeholder={placeholder}
-                        value={value}
-                        readOnly
-                    />
-                </td>);
+                return (<div key={value} style={{ margin: "0.05rem", flex: 1 }}><TextInput
+                    placeholder={placeholder}
+                    value={value}
+                    readOnly
+                /></div>);
             })}
-        </tr>)}
-    </table>);
+        </Flex>)}
+    </div>);
 }
 
 interface GuildMessageListProps {
