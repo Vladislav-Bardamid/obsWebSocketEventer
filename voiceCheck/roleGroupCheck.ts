@@ -10,10 +10,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { ChannelStore, GuildMemberStore } from "@webpack/common";
+import { ChannelStore } from "@webpack/common";
 
 import { settings } from "..";
 import { CheckType, GroupUpdateResult, RoleGroupSetting } from "../types";
+import { checkUserForRoles } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class RoleGroupCheck implements VoiceCheckStrategy {
@@ -38,7 +39,7 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
             const filteredUserIds = userIds.filter(x =>
                 !group.excludeUserIds.includes(x)
                 && !includedUserIds.includes(x)
-                && this.checkUser(x, roleIds, guildId));
+                && checkUserForRoles(x, guildId, roleIds));
             const currentUserIds = [...includedUserIds, ...filteredUserIds];
 
             joinedUserIds = joinedUserIds?.filter(x =>
@@ -46,7 +47,7 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
             leftUserIds = leftUserIds?.filter(x =>
                 !group.excludeUserIds.includes(x)
                 && (includedUserIds.includes(x)
-                    || this.checkUser(x, roleIds, guildId)));
+                    || checkUserForRoles(x, guildId, roleIds)));
 
             const result = {
                 checkType: CheckType.RoleGroups,
@@ -59,13 +60,5 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
 
             return result;
         };
-    }
-
-
-    private checkUser(userId: string, roleIds: string[], guildId: string): boolean {
-        const result = GuildMemberStore.getMember(guildId, userId)!.roles
-            .some(roleId => roleIds.includes(roleId));
-
-        return result;
     }
 }

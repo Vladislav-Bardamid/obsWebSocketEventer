@@ -4,18 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { MediaEngineStore } from "plugins/voiceMessages/utils";
-
 import { CheckType, GroupUpdateResult } from "../types";
+import { checkMute as checkMuted } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class MutedCheck implements VoiceCheckStrategy {
     process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
-        const currentUserIds = userIds.filter(x => this.checkUser(x));
-        joinedUserIds = joinedUserIds?.filter(x =>
-            currentUserIds.includes(x));
-        leftUserIds = leftUserIds?.filter(x =>
-            this.checkUser(x));
+        const currentUserIds = userIds.filter(x => checkMuted(x));
+        joinedUserIds = joinedUserIds?.filter(x => currentUserIds.includes(x));
+        leftUserIds = leftUserIds?.filter(x => checkMuted(x));
 
         const result = [{
             checkType: CheckType.Muted,
@@ -24,13 +21,6 @@ export class MutedCheck implements VoiceCheckStrategy {
             joinedUserIds,
             leftUserIds
         } as GroupUpdateResult];
-
-        return result;
-    }
-
-    private checkUser(userId: string): boolean {
-        const result = MediaEngineStore.isLocalMute(userId)
-            || MediaEngineStore.getLocalVolume(userId) === 0;
 
         return result;
     }

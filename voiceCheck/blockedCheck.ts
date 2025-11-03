@@ -4,18 +4,15 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { RelationshipStore } from "@webpack/common";
-
 import { CheckType, GroupUpdateResult } from "../types";
+import { checkUserIsBlocked } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class BlockedCheck implements VoiceCheckStrategy {
     process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
-        const currentUserIds = userIds.filter(x => this.checkUser(x));
-        joinedUserIds = joinedUserIds?.filter(x =>
-            currentUserIds.includes(x));
-        leftUserIds = leftUserIds?.filter(x =>
-            this.checkUser(x));
+        const currentUserIds = userIds.filter(x => checkUserIsBlocked(x));
+        joinedUserIds = joinedUserIds?.filter(x => currentUserIds.includes(x));
+        leftUserIds = leftUserIds?.filter(x => checkUserIsBlocked(x));
 
         const result = [{
             checkType: CheckType.Blocked,
@@ -24,12 +21,6 @@ export class BlockedCheck implements VoiceCheckStrategy {
             joinedUserIds,
             leftUserIds
         } as GroupUpdateResult];
-
-        return result;
-    }
-
-    private checkUser(userId: string): boolean {
-        const result = RelationshipStore.isBlockedOrIgnored(userId);
 
         return result;
     }

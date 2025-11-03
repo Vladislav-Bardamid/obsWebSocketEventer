@@ -30,7 +30,7 @@ export class VoiceCheckContext {
         [CheckType.Muted]: new MutedCheck(),
         [CheckType.Blocked]: new BlockedCheck()
     };
-    private results = new Map<[CheckType, string?], boolean>();
+    private results = new Map<CheckType, Map<string | undefined, boolean>>();
 
     processRoleGroups() {
         this.process(CheckType.RoleGroups);
@@ -79,6 +79,10 @@ export class VoiceCheckContext {
         const myChanId = SelectedChannelStore.getVoiceChannelId()!;
         if (!myChanId) return;
 
+        const channelChanged = voiceStates.some(x => (
+            x.channelId === myChanId
+            || x.oldChannelId === myChanId
+        ) && x.userId !== myId);
         const stateUpdates = voiceStates.filter(x =>
             x.channelId !== x.oldChannelId
             && x.userId !== myId);
@@ -86,7 +90,7 @@ export class VoiceCheckContext {
         const joinedUserIds = stateUpdates.filter(x => x.channelId === myChanId)?.map(x => x.userId);
         const leftUserIds = stateUpdates.filter(x => x.oldChannelId === myChanId)?.map(x => x.userId);
 
-        if (!myState && !joinedUserIds.length && !leftUserIds.length) return;
+        if (!myState && !channelChanged) return;
 
         this.processAllStrategies(myChanId, joinedUserIds, leftUserIds);
     }
@@ -96,22 +100,28 @@ export class VoiceCheckContext {
         if (!myChanId) return;
 
         const userIds = this.getChannelUserIds(myChanId);
-        const strategy = this.strategies[type];
-
-        this.processStrategy(strategy, myChanId, userIds);
+        this.processStrategy(type, myChanId, userIds);
     }
 
     private processAllStrategies(chanId: string, joinedUserIds?: string[], leftUserIds?: string[]) {
         const userIds = this.getChannelUserIds(chanId);
-        const strategies = Object.values(this.strategies);
 
-        strategies.forEach(strategy => this.processStrategy(strategy, chanId, userIds, joinedUserIds, leftUserIds));
+        Object.keys(this.strategies).map(Number).map(x => x as CheckType).forEach(x =>
+            this.processStrategy(x, chanId, userIds, joinedUserIds, leftUserIds));
     }
 
-    private processStrategy(strategy: VoiceCheckStrategy, chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    private processStrategy(strategyType: CheckType, chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+        const strategy = this.strategies[strategyType];
         const result = strategy.process(chanId, userIds, joinedUserIds, leftUserIds);
+
+        let oldValues = this.results.get(strategyType);
+        if (!oldValues) {
+            oldValues = new Map();
+            this.results.set(strategyType, oldValues);
+        }
+
         result.forEach(x => {
-            const entry = this.results.get([x.checkType, x.source])!;
+            const entry = oldValues.get(x.source);
 
             if (entry === x.status) return;
 
@@ -123,7 +133,7 @@ export class VoiceCheckContext {
             x.joinedUserIds && this.sendMessage(messageType, statusMessage, x.joinedUserIds, x.source);
             x.leftUserIds && this.sendMessage(messageType, statusMessage, x.leftUserIds, x.source);
 
-            this.results.set([x.checkType, x.source], x.status);
+            oldValues.set(x.source, x.status);
         });
     }
 
@@ -133,10 +143,10 @@ export class VoiceCheckContext {
     }
 
     private disposeAll() {
-        this.results.keys().forEach(x => {
+        this.results.entries().forEach(x => x[1].keys().forEach(y => {
             const messageType = this.getCheckMessageType(x[0]);
-            obsClient.sendRequest(createMessage(messageType, x[1], "leave"));
-        });
+            obsClient.sendRequest(createMessage(messageType, y, "leave"));
+        }));
         this.results.clear();
     }
 

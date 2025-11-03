@@ -10,10 +10,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { ChannelStore, GuildMemberStore } from "@webpack/common";
+import { ChannelStore } from "@webpack/common";
 
 import { settings } from "..";
 import { CheckType, GroupUpdateResult, PatternSetting } from "../types";
+import { checkSelfMuted, checkUserForRoles } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class PatternCheck implements VoiceCheckStrategy {
@@ -29,12 +30,12 @@ export class PatternCheck implements VoiceCheckStrategy {
 
     private getCheckPattern(guildId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
         return (setting: PatternSetting) => {
-            const currentUserIds = userIds.filter(userId => this.checkUser(userId, guildId, setting));
+            const currentUserIds = userIds.filter(userId => this.checkUser(userId, guildId, setting, joinedUserIds, leftUserIds));
 
             joinedUserIds = joinedUserIds?.filter(x =>
                 currentUserIds.includes(x));
             leftUserIds = leftUserIds?.filter(x =>
-                this.checkUser(x, guildId, setting));
+                this.checkUser(x, guildId, setting, joinedUserIds, leftUserIds));
 
             const result = {
                 checkType: CheckType.Patterns,
@@ -50,31 +51,59 @@ export class PatternCheck implements VoiceCheckStrategy {
     }
 
 
-    private checkUser(userId: string, guildId: string, setting: PatternSetting) {
+    private checkUser(userId: string, guildId: string, setting: PatternSetting, joinedUserIds?: string[], leftUserIds?: string[]) {
         const groupRules = setting.pattern.split(" ");
-        const result = groupRules
-            .every(groupRule => {
-                const exclude = groupRule.startsWith("-");
-                const groupName = groupRule.slice(exclude ? 1 : 0);
-                const group = settings.store.guildRoleGroups.find(group => group.name === groupName);
-                if (!group) return exclude;
-
-                const roleIds = group.roles
-                    .filter(x => x.guildId === guildId)
-                    .map(x => x.id);
-
-                const isIncluded = (exclude
-                    ? group.excludeUserIds
-                    : group.includeUserIds
-                ).includes(userId);
-                if (isIncluded) return exclude;
-
-                const result = GuildMemberStore.getMember(guildId, userId)!.roles
-                    .some(roleId => roleIds.includes(roleId));
-
-                return result !== exclude;
-            });
+        const groupRuleCheck = this.getRuleCheck(userId, guildId, joinedUserIds, leftUserIds);
+        const result = groupRules.every(groupRule => groupRuleCheck(groupRule));
 
         return result;
     }
+
+    private getRuleCheck(userId, guildId: string, joinedUserIds?: string[], leftUserIds?: string[]) {
+        return (rule: string) => {
+            const exclude = rule.startsWith("-");
+            let groupName = rule.slice(exclude ? 1 : 0);
+
+            const rules = groupName.split(":");
+            groupName = rules.pop()!;
+
+            const ruleStatus = this.checkRules(userId, rules, joinedUserIds, leftUserIds);
+            if (!ruleStatus) return exclude;
+
+            if (groupName === "muted")
+                return checkSelfMuted(userId);
+
+            const group = settings.store.guildRoleGroups.find(group => group.name === groupName);
+            if (!group) return exclude;
+
+            const roleIds = group.roles
+                .filter(x => x.guildId === guildId)
+                .map(x => x.id);
+
+            const isIncluded = (exclude
+                ? group.excludeUserIds
+                : group.includeUserIds
+            ).includes(userId);
+            if (isIncluded) return exclude;
+
+            const result = checkUserForRoles(userId, guildId, roleIds);
+
+            return result !== exclude;
+        };
+    }
+
+    private checkRules(userId: string, rules: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+        for (const rule of rules) {
+            if (rule === ServiceRules.Join
+                && joinedUserIds
+                && !joinedUserIds.includes(userId)
+            ) return false;
+        }
+
+        return true;
+    }
+}
+
+enum ServiceRules {
+    Join = "join"
 }
