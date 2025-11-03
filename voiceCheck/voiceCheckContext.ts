@@ -16,6 +16,7 @@ import { obsClient } from "..";
 import { CheckType, VoiceStateChangeEvent } from "../types";
 import { createMessage } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
+import { FriendCheck as FriendsCheck } from "./friendCheck";
 import { MutedCheck } from "./mutedCheck";
 import { PatternCheck } from "./patternCheck";
 import { RoleGroupCheck } from "./roleGroupCheck";
@@ -28,6 +29,7 @@ export class VoiceCheckContext {
         [CheckType.Patterns]: new PatternCheck(),
         [CheckType.Some]: new SomeCheck(),
         [CheckType.Muted]: new MutedCheck(),
+        [CheckType.Friends]: new FriendsCheck(),
         [CheckType.Blocked]: new BlockedCheck()
     };
     private results = new Map<CheckType, Map<string | undefined, boolean>>();
@@ -46,6 +48,10 @@ export class VoiceCheckContext {
 
     processMuted() {
         this.process(CheckType.Muted);
+    }
+
+    processFriends() {
+        this.process(CheckType.Friends);
     }
 
     processBlocked() {
@@ -106,7 +112,7 @@ export class VoiceCheckContext {
     private processAllStrategies(chanId: string, joinedUserIds?: string[], leftUserIds?: string[]) {
         const userIds = this.getChannelUserIds(chanId);
 
-        Object.keys(this.strategies).map(Number).map(x => x as CheckType).forEach(x =>
+        Object.keys(this.strategies).map(x => x as CheckType).forEach(x =>
             this.processStrategy(x, chanId, userIds, joinedUserIds, leftUserIds));
     }
 

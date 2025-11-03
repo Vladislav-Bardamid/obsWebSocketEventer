@@ -78,6 +78,10 @@ export const settings = definePluginSettings({
                 <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="muted" />
             </div>
             <div>
+                <Forms.FormText>Friend messages</Forms.FormText>
+                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="friend" />
+            </div>
+            <div>
                 <Forms.FormText>Blocked messages</Forms.FormText>
                 <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="blocked" />
             </div>
@@ -180,6 +184,7 @@ function onRelationshipUpdate() {
 
     if (!guildId || !myChanId) return;
 
+    userCheckContext.processFriends();
     userCheckContext.processBlocked();
 }
 

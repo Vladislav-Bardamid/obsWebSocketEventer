@@ -69,9 +69,10 @@ export interface UserJoinResult {
 }
 
 export enum CheckType {
-    RoleGroups,
-    Patterns,
-    Some,
-    Muted,
-    Blocked
+    RoleGroups = "role-groups",
+    Patterns = "patterns",
+    Some = "some",
+    Muted = "muted",
+    Friends = "friends",
+    Blocked = "blocked"
 }

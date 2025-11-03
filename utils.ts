@@ -64,6 +64,10 @@ export function checkUserForRoles(userId: string, guildId: string, roleIds: stri
     return result;
 }
 
+export function checkUserIsFriend(userId: string) {
+    return RelationshipStore.isFriend(userId);
+}
+
 export function checkUserIsBlocked(userId: string) {
     return RelationshipStore.isBlockedOrIgnored(userId);
 }
