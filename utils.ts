@@ -54,7 +54,8 @@ export function checkMute(userId: string) {
 }
 
 export function checkSelfMuted(userId: string) {
-    return VoiceStateStore.getVoiceStateForUser(userId)?.selfMute;
+    const state = VoiceStateStore.getVoiceStateForUser(userId);
+    return state?.selfMute || state?.selfDeaf;
 }
 
 export function checkUserForRoles(userId: string, guildId: string, roleIds: string[]) {

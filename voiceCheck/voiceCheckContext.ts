@@ -13,7 +13,7 @@
 import { SelectedChannelStore, UserStore, VoiceStateStore } from "@webpack/common";
 
 import { obsClient } from "..";
-import { CheckType, VoiceStateChangeEvent } from "../types";
+import { CheckType, GroupUpdateResult, VoiceStateChangeEvent } from "../types";
 import { createMessage } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
 import { FriendCheck as FriendsCheck } from "./friendCheck";
@@ -128,24 +128,32 @@ export class VoiceCheckContext {
 
         result.forEach(x => {
             const entry = oldValues.get(x.source);
-
             if (entry === x.status) return;
 
-            const messageType = this.getCheckMessageType(x.checkType);
-            const statusMessage = x.status ? "enter" : "leave";
-
-            this.sendMessage(messageType, statusMessage, x.userIds, x.source);
-
-            x.joinedUserIds && this.sendMessage(messageType, statusMessage, x.joinedUserIds, x.source);
-            x.leftUserIds && this.sendMessage(messageType, statusMessage, x.leftUserIds, x.source);
+            this.processUpdate(x);
 
             oldValues.set(x.source, x.status);
         });
     }
 
-    private sendMessage(messageType: string, statusMessage, userIds: string[], source?: string) {
-        obsClient.sendRequest(createMessage(messageType, source, statusMessage));
-        obsClient.sendBrowserRequest(messageType, { users: userIds });
+    private processUpdate(update: GroupUpdateResult) {
+        const messageType = this.getCheckMessageType(update.checkType) ?? update.source;
+        if (!messageType) return;
+
+        this.sendMessage(messageType, update.status, update.userIds);
+
+        update.joinedUserIds && this.sendMessage(messageType, true, update.joinedUserIds, true);
+        update.leftUserIds && this.sendMessage(messageType, false, update.leftUserIds, true);
+    }
+
+    private sendMessage(messageType: string, status: boolean, userIds: string[], isUser: boolean = false) {
+        const statusMessage = status ? "enter" : "leave";
+        const scope = isUser ? "user" : undefined;
+
+        const message = createMessage(messageType, scope, statusMessage);
+
+        obsClient.sendRequest(message);
+        obsClient.sendBrowserRequest(message, { users: userIds });
     }
 
     private disposeAll() {
@@ -163,7 +171,7 @@ export class VoiceCheckContext {
             .filter(x => x !== myId);
     }
 
-    private getCheckMessageType(type: CheckType): string {
+    private getCheckMessageType(type: CheckType) {
         switch (type) {
             case CheckType.Some:
                 return "some";
@@ -172,7 +180,7 @@ export class VoiceCheckContext {
             case CheckType.Blocked:
                 return "blocked";
             default:
-                return "";
+                return;
         }
     }
 }
