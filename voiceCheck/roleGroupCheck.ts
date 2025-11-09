@@ -18,17 +18,17 @@ import { checkUserForRoles } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class RoleGroupCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
         const guildId = ChannelStore.getChannel(chanId)?.guild_id;
 
-        const checkRoleGroup = this.getCheckRoleGroup(guildId, userIds, joinedUserIds, leftUserIds);
+        const checkRoleGroup = this.getCheckRoleGroup(guildId, userIds, enteredUserIds, leftUserIds);
         const groupUpdates = enabledGroups.map(group => checkRoleGroup(group));
 
         return groupUpdates;
     }
 
-    private getCheckRoleGroup(guildId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    private getCheckRoleGroup(guildId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         return (group: RoleGroupSetting) => {
             const roleIds = group.roles
                 .filter(x => x.guildId === guildId)
@@ -42,7 +42,7 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
                 && checkUserForRoles(x, guildId, roleIds));
             const currentUserIds = [...includedUserIds, ...filteredUserIds];
 
-            joinedUserIds = joinedUserIds?.filter(x =>
+            enteredUserIds = enteredUserIds?.filter(x =>
                 currentUserIds.includes(x));
             leftUserIds = leftUserIds?.filter(x =>
                 !group.excludeUserIds.includes(x)
@@ -54,7 +54,7 @@ export class RoleGroupCheck implements VoiceCheckStrategy {
                 source: group.name,
                 status: currentUserIds.length > 0,
                 userIds: currentUserIds,
-                joinedUserIds,
+                enteredUserIds,
                 leftUserIds
             } as GroupUpdateResult;
 

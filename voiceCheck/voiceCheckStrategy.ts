@@ -7,5 +7,5 @@
 import { GroupUpdateResult } from "../types";
 
 export interface VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]): GroupUpdateResult[];
+    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]): GroupUpdateResult[];
 }

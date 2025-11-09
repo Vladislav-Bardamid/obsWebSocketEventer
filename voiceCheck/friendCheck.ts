@@ -9,16 +9,16 @@ import { checkUserIsFriend } from "../utils";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class FriendCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         const currentUserIds = userIds.filter(x => checkUserIsFriend(x));
-        joinedUserIds = joinedUserIds?.filter(x => currentUserIds.includes(x));
+        enteredUserIds = enteredUserIds?.filter(x => currentUserIds.includes(x));
         leftUserIds = leftUserIds?.filter(x => checkUserIsFriend(x));
 
         const result = [{
             checkType: CheckType.Friends,
             status: currentUserIds.length > 0,
             userIds: currentUserIds,
-            joinedUserIds,
+            enteredUserIds,
             leftUserIds
         } as GroupUpdateResult];
 

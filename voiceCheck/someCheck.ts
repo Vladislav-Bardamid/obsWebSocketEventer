@@ -8,12 +8,12 @@ import { CheckType, GroupUpdateResult } from "../types";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class SomeCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         const result = [{
             checkType: CheckType.Some,
             status: userIds.length > 0,
             userIds,
-            joinedUserIds,
+            enteredUserIds,
             leftUserIds
         } as GroupUpdateResult];
 

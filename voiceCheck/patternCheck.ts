@@ -18,31 +18,31 @@ import { checkSelfMuted as checkUserIsSelfMuted, checkUserForRoles, checkUserIsB
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export class PatternCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         const enabledPatterns = settings.store.patterns.filter(role => !role.disabled);
         const guildId = ChannelStore.getChannel(chanId)?.guild_id;
 
-        const checkPattern = this.getCheckPattern(guildId, userIds, joinedUserIds, leftUserIds);
+        const checkPattern = this.getCheckPattern(guildId, userIds, enteredUserIds, leftUserIds);
         const groupUpdates = enabledPatterns.map(checkPattern);
 
         return groupUpdates;
     }
 
-    private getCheckPattern(guildId: string, userIds: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    private getCheckPattern(guildId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         return (setting: PatternSetting) => {
-            const currentUserIds = userIds.filter(userId => this.checkUser(userId, guildId, setting, joinedUserIds, leftUserIds));
+            const currentUserIds = userIds.filter(userId => this.checkUser(userId, guildId, setting, enteredUserIds, leftUserIds));
 
-            joinedUserIds = joinedUserIds?.filter(x =>
+            enteredUserIds = enteredUserIds?.filter(x =>
                 currentUserIds.includes(x));
             leftUserIds = leftUserIds?.filter(x =>
-                this.checkUser(x, guildId, setting, joinedUserIds, leftUserIds));
+                this.checkUser(x, guildId, setting, enteredUserIds, leftUserIds));
 
             const result = {
                 checkType: CheckType.Patterns,
                 source: setting.name,
                 status: currentUserIds.length > 0,
                 userIds: currentUserIds,
-                joinedUserIds,
+                enteredUserIds,
                 leftUserIds
             } as GroupUpdateResult;
 
@@ -51,15 +51,15 @@ export class PatternCheck implements VoiceCheckStrategy {
     }
 
 
-    private checkUser(userId: string, guildId: string, setting: PatternSetting, joinedUserIds?: string[], leftUserIds?: string[]) {
+    private checkUser(userId: string, guildId: string, setting: PatternSetting, enteredUserIds?: string[], leftUserIds?: string[]) {
         const groupRules = setting.pattern.split(" ");
-        const groupRuleCheck = this.getRuleCheck(userId, guildId, joinedUserIds, leftUserIds);
+        const groupRuleCheck = this.getRuleCheck(userId, guildId, enteredUserIds, leftUserIds);
         const result = groupRules.every(groupRuleCheck);
 
         return result;
     }
 
-    private getRuleCheck(userId, guildId: string, joinedUserIds?: string[], leftUserIds?: string[]) {
+    private getRuleCheck(userId, guildId: string, enteredUserIds?: string[], leftUserIds?: string[]) {
         return (rule: string) => {
             const exclude = rule.startsWith("-");
             let groupName = rule.slice(exclude ? 1 : 0);
@@ -67,7 +67,7 @@ export class PatternCheck implements VoiceCheckStrategy {
             const rules = groupName.split(":");
             groupName = rules.pop()!;
 
-            const prefixStatus = this.checkPrefix(userId, rules, joinedUserIds, leftUserIds);
+            const prefixStatus = this.checkPrefix(userId, rules, enteredUserIds, leftUserIds);
             if (!prefixStatus) return exclude;
 
             const isRule = this.checkRule(groupName, userId);
@@ -92,10 +92,10 @@ export class PatternCheck implements VoiceCheckStrategy {
         };
     }
 
-    private checkPrefix(userId: string, rules: string[], joinedUserIds?: string[], leftUserIds?: string[]) {
+    private checkPrefix(userId: string, rules: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         for (const rule of rules) {
             if (rule === ServiceRules.Join
-                && !joinedUserIds?.includes(userId)
+                && !enteredUserIds?.includes(userId)
             ) return false;
         }
 
