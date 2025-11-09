@@ -13,7 +13,7 @@
 import { SelectedChannelStore, UserStore, VoiceStateStore } from "@webpack/common";
 
 import { obsClient } from "..";
-import { CheckType, GroupUpdateResult, VoiceStateChangeEvent } from "../types";
+import { CheckType, VoiceStateChangeEvent } from "../types";
 import { createMessage } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
 import { FriendCheck as FriendsCheck } from "./friendCheck";
@@ -22,6 +22,17 @@ import { PatternCheck } from "./patternCheck";
 import { RoleGroupCheck } from "./roleGroupCheck";
 import { SomeCheck } from "./someCheck";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
+
+const ENTER = "enter";
+const LEAVE = "leave";
+
+const USER = "user";
+
+const MESSAGE_TYPES = {
+    [CheckType.Some]: "some",
+    [CheckType.Muted]: "muted",
+    [CheckType.Blocked]: "blocked"
+};
 
 export class VoiceCheckContext {
     private strategies: { [key in CheckType]: VoiceCheckStrategy } = {
@@ -128,38 +139,38 @@ export class VoiceCheckContext {
 
         result.forEach(x => {
             const entry = oldValues.get(x.source);
-            if (entry === x.status) return;
+            const messageType = MESSAGE_TYPES[strategyType] ?? x.source;
 
-            this.processUpdate(x);
+            if (entry !== x.status) {
+                const message = createMessage(messageType, x.status ? ENTER : LEAVE);
+                this.sendMessage(message, x.userIds);
 
-            oldValues.set(x.source, x.status);
+                oldValues.set(x.source, x.status);
+            }
+
+            if (x.joinedUserIds?.length) {
+                const message = createMessage(messageType, USER, ENTER);
+                this.sendMessage(message, x.userIds);
+            }
+
+            if (x.leftUserIds?.length) {
+                const message = createMessage(messageType, USER, LEAVE);
+                this.sendMessage(message, x.userIds);
+            }
         });
     }
 
-    private processUpdate(update: GroupUpdateResult) {
-        const messageType = this.getCheckMessageType(update.checkType) ?? update.source;
-        if (!messageType) return;
-
-        this.sendMessage(messageType, update.status, update.userIds);
-
-        update.joinedUserIds && this.sendMessage(messageType, true, update.joinedUserIds, true);
-        update.leftUserIds && this.sendMessage(messageType, false, update.leftUserIds, true);
-    }
-
-    private sendMessage(messageType: string, status: boolean, userIds: string[], isUser: boolean = false) {
-        const statusMessage = status ? "enter" : "leave";
-        const scope = isUser ? "user" : undefined;
-
-        const message = createMessage(messageType, scope, statusMessage);
-
-        obsClient.sendRequest(message);
-        obsClient.sendBrowserRequest(message, { users: userIds });
+    private sendMessage(messageType: string, userIds: string[]) {
+        obsClient.sendRequest(messageType);
+        obsClient.sendBrowserRequest(messageType, { users: userIds });
     }
 
     private disposeAll() {
         this.results.entries().forEach(x => x[1].keys().forEach(y => {
-            const messageType = this.getCheckMessageType(x[0]);
-            obsClient.sendRequest(createMessage(messageType, y, "leave"));
+            const messageType = MESSAGE_TYPES[x[0]] ?? y;
+            const message = createMessage(messageType, LEAVE);
+
+            obsClient.sendRequest(message);
         }));
         this.results.clear();
     }
@@ -169,18 +180,5 @@ export class VoiceCheckContext {
 
         return Object.keys(VoiceStateStore.getVoiceStatesForChannel(chanId))
             .filter(x => x !== myId);
-    }
-
-    private getCheckMessageType(type: CheckType) {
-        switch (type) {
-            case CheckType.Some:
-                return "some";
-            case CheckType.Muted:
-                return "muted";
-            case CheckType.Blocked:
-                return "blocked";
-            default:
-                return;
-        }
     }
 }

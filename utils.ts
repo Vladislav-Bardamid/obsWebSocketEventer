@@ -10,7 +10,7 @@ import { MediaEngineStore } from "plugins/voiceMessages/utils";
 import { PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
 
 export function createMessage(...params: (string | undefined)[]) {
-    return params.filter(x => x).map(x => x?.toLowerCase()).join("-");
+    return params.filter(x => x).map(x => x!.toLowerCase()).join("-");
 }
 
 const ln = "[a-zA-Z0-9]+";
