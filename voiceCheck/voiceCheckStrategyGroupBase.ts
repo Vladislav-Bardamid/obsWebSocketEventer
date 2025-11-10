@@ -16,7 +16,7 @@ import { CheckType, GroupUpdateResult, NamedGroup } from "../types";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export abstract class VoiceCheckStrategyGroupBase<T extends NamedGroup> implements VoiceCheckStrategy {
-    protected constructor(private type: CheckType) { }
+    protected abstract type: CheckType;
 
     process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         const enabledGroups = this.getGroups().filter(role => !role.disabled);

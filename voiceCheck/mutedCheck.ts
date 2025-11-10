@@ -9,7 +9,7 @@ import { checkMute as checkMuted } from "../utils";
 import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
 export class MutedCheck extends VoiceCheckStrategyBase {
-    constructor() { super(CheckType.Muted); }
+    protected type = CheckType.Muted;
 
     protected checkUser(userId: string): boolean {
         return checkMuted(userId);

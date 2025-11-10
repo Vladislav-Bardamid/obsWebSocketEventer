@@ -17,7 +17,7 @@ import { checkSelfMuted as checkUserIsSelfMuted, checkUserForRoles, checkUserIsB
 import { VoiceCheckStrategyGroupBase } from "./voiceCheckStrategyGroupBase";
 
 export class PatternCheck extends VoiceCheckStrategyGroupBase<PatternSetting> {
-    constructor() { super(CheckType.Patterns); }
+    protected type = CheckType.Patterns;
 
     protected getGroups() { return settings.store.patterns; }
 

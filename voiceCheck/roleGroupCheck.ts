@@ -17,7 +17,7 @@ import { checkUserForRoles } from "../utils";
 import { VoiceCheckStrategyGroupBase } from "./voiceCheckStrategyGroupBase";
 
 export class RoleGroupCheck extends VoiceCheckStrategyGroupBase<RoleGroupSetting> {
-    constructor() { super(CheckType.RoleGroups); }
+    protected type = CheckType.RoleGroups;
 
     protected getGroups() { return settings.store.roleGroups; }
 

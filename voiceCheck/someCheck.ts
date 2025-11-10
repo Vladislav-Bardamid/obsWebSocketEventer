@@ -8,7 +8,7 @@ import { CheckType } from "../types";
 import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
 export class SomeCheck extends VoiceCheckStrategyBase {
-    constructor() { super(CheckType.Some); }
+    protected type = CheckType.Some;
 
     protected checkUser(userId: string): boolean {
         return true;

@@ -9,7 +9,7 @@ import { checkUserIsBlocked } from "../utils";
 import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
 export class BlockedCheck extends VoiceCheckStrategyBase {
-    constructor() { super(CheckType.Blocked); }
+    protected type = CheckType.Blocked;
 
     protected checkUser(userId: string) {
         return checkUserIsBlocked(userId);

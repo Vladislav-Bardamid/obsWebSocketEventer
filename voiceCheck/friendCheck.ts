@@ -9,7 +9,7 @@ import { checkUserIsFriend } from "../utils";
 import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
 export class FriendCheck extends VoiceCheckStrategyBase {
-    constructor() { super(CheckType.Friends); }
+    protected type = CheckType.Friends;
 
     protected checkUser(userId: string): boolean {
         return checkUserIsFriend(userId);
