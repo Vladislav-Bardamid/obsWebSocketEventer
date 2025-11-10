@@ -16,18 +16,19 @@ export interface RoleSetting {
     guildId: string;
 }
 
-export interface RoleGroupSetting {
+export interface NamedGroup {
     name: string;
-    roles: RoleSetting[];
-    includeUserIds: string[];
-    excludeUserIds: string[];
     disabled: boolean;
 }
 
-export interface PatternSetting {
-    name: string;
+export interface RoleGroupSetting extends NamedGroup {
+    roles: RoleSetting[];
+    includeUserIds: string[];
+    excludeUserIds: string[];
+}
+
+export interface PatternSetting extends NamedGroup {
     pattern: string;
-    disabled: boolean;
 }
 
 export interface VoiceStateChangeEvent {

@@ -10,48 +10,16 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { ChannelStore } from "@webpack/common";
 
 import { settings } from "..";
-import { CheckType, GroupUpdateResult, PatternSetting } from "../types";
+import { CheckType, PatternSetting } from "../types";
 import { checkSelfMuted as checkUserIsSelfMuted, checkUserForRoles, checkUserIsBlocked, checkUserIsFriend } from "../utils";
-import { VoiceCheckStrategy } from "./voiceCheckStrategy";
+import { VoiceCheckStrategyGroupBase } from "./voiceCheckStrategyGroupBase";
 
-export class PatternCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const enabledPatterns = settings.store.patterns.filter(role => !role.disabled);
-        const guildId = ChannelStore.getChannel(chanId)?.guild_id;
+export class PatternCheck extends VoiceCheckStrategyGroupBase<PatternSetting> {
+    constructor() { super(CheckType.Patterns, settings.store.patterns); }
 
-        const checkPattern = this.getCheckPattern(guildId, userIds, enteredUserIds, leftUserIds);
-        const groupUpdates = enabledPatterns.map(checkPattern);
-
-        return groupUpdates;
-    }
-
-    private getCheckPattern(guildId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        return (setting: PatternSetting) => {
-            const currentUserIds = userIds.filter(userId => this.checkUser(userId, guildId, setting, enteredUserIds, leftUserIds));
-
-            enteredUserIds = enteredUserIds?.filter(x =>
-                currentUserIds.includes(x));
-            leftUserIds = leftUserIds?.filter(x =>
-                this.checkUser(x, guildId, setting, enteredUserIds, leftUserIds));
-
-            const result = {
-                checkType: CheckType.Patterns,
-                source: setting.name,
-                status: currentUserIds.length > 0,
-                userIds: currentUserIds,
-                enteredUserIds,
-                leftUserIds
-            } as GroupUpdateResult;
-
-            return result;
-        };
-    }
-
-
-    private checkUser(userId: string, guildId: string, setting: PatternSetting, enteredUserIds?: string[], leftUserIds?: string[]) {
+    protected checkUser(userId: string, guildId: string, setting: PatternSetting, enteredUserIds?: string[], leftUserIds?: string[]) {
         const groupRules = setting.pattern.split(" ");
         const groupRuleCheck = this.getRuleCheck(userId, guildId, enteredUserIds, leftUserIds);
         const result = groupRules.every(groupRuleCheck);
@@ -73,7 +41,7 @@ export class PatternCheck implements VoiceCheckStrategy {
             const isRule = this.checkRule(groupName, userId);
             if (isRule !== undefined) return isRule !== exclude;
 
-            const group = settings.store.guildRoleGroups.find(group => group.name === groupName);
+            const group = settings.store.roleGroups.find(group => group.name === groupName);
             if (!group) return exclude;
 
             const roleIds = group.roles

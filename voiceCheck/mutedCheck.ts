@@ -4,24 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { CheckType, GroupUpdateResult } from "../types";
+import { CheckType } from "../types";
 import { checkMute as checkMuted } from "../utils";
-import { VoiceCheckStrategy } from "./voiceCheckStrategy";
+import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
-export class MutedCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const currentUserIds = userIds.filter(x => checkMuted(x));
-        enteredUserIds = enteredUserIds?.filter(x => currentUserIds.includes(x));
-        leftUserIds = leftUserIds?.filter(x => checkMuted(x));
+export class MutedCheck extends VoiceCheckStrategyBase {
+    constructor() { super(CheckType.Muted); }
 
-        const result = [{
-            checkType: CheckType.Muted,
-            status: currentUserIds.length > 0,
-            userIds: currentUserIds,
-            enteredUserIds,
-            leftUserIds
-        } as GroupUpdateResult];
-
-        return result;
+    protected checkUser(userId: string): boolean {
+        return checkMuted(userId);
     }
 }

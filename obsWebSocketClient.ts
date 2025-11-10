@@ -38,7 +38,7 @@ export class OBSWebSocketClient {
         await this.sendBrowserRequest("obs-user-presence", { category, status, users });
     }
 
-    public async sendBrowserRequest(name: string, data: any) {
+    public async sendBrowserRequest(name: string, data?: any) {
         const connection = await this.checkConnection();
 
         if (!connection && !await this.connect()) return;

@@ -87,14 +87,14 @@ export const settings = definePluginSettings({
             </div>
         </Flex>
     },
-    guildRoleGroups: {
+    roleGroups: {
         type: OptionType.COMPONENT,
         component: () => {
-            const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
+            const { roleGroups } = settings.use(["roleGroups"]);
 
             return (<div>
                 <Forms.FormText>Guild roles</Forms.FormText>
-                <RoleGroupList roleGroups={guildRoleGroups} />
+                <RoleGroupList roleGroups={roleGroups} />
             </div>);
         },
         default: [] as RoleGroupSetting[]
@@ -196,7 +196,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
     if (isMe) return;
 
-    const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
+    const { roleGroups: guildRoleGroups } = settings.use(["roleGroups"]);
     const { roles } = GuildMemberStore.getMember(guildId!, user.id)!;
 
     const items = guildRoleGroups.map(x => ({
@@ -247,7 +247,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 function RoleContext(children, { id }: { id: string; }) {
     const guildId = SelectedGuildStore.getGuildId()!;
 
-    const { guildRoleGroups } = settings.use(["guildRoleGroups"]);
+    const { roleGroups: guildRoleGroups } = settings.use(["roleGroups"]);
 
     children.splice(-1, 0, (
         <Menu.MenuItem id="obs-events-role-group" label="OBS Events">

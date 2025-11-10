@@ -154,9 +154,9 @@ export class VoiceCheckContext {
         });
     }
 
-    private sendMessage(messageType: string, userIds: string[]) {
+    private sendMessage(messageType: string, userIds?: string[]) {
         obsClient.sendRequest(messageType);
-        obsClient.sendBrowserRequest(messageType, { users: userIds });
+        obsClient.sendBrowserRequest(messageType, { userIds });
     }
 
     private disposeAll() {
@@ -164,7 +164,7 @@ export class VoiceCheckContext {
             const messageType = y ?? x[0];
             const message = createMessage(messageType, LEAVE);
 
-            obsClient.sendRequest(message);
+            this.sendMessage(message);
         }));
         this.results.clear();
     }

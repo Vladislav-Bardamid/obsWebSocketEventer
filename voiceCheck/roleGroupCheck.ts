@@ -10,55 +10,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { ChannelStore } from "@webpack/common";
 
 import { settings } from "..";
-import { CheckType, GroupUpdateResult, RoleGroupSetting } from "../types";
+import { CheckType, RoleGroupSetting } from "../types";
 import { checkUserForRoles } from "../utils";
-import { VoiceCheckStrategy } from "./voiceCheckStrategy";
+import { VoiceCheckStrategyGroupBase } from "./voiceCheckStrategyGroupBase";
 
-export class RoleGroupCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const enabledGroups = settings.store.guildRoleGroups.filter(role => !role.disabled);
-        const guildId = ChannelStore.getChannel(chanId)?.guild_id;
+export class RoleGroupCheck extends VoiceCheckStrategyGroupBase<RoleGroupSetting> {
+    constructor() { super(CheckType.RoleGroups, settings.store.roleGroups); }
 
-        const checkRoleGroup = this.getCheckRoleGroup(guildId, userIds, enteredUserIds, leftUserIds);
-        const groupUpdates = enabledGroups.map(group => checkRoleGroup(group));
+    protected checkUser(userId: string, guildId: string, group: RoleGroupSetting) {
+        const { includeUserIds, excludeUserIds, roles } = group;
 
-        return groupUpdates;
-    }
+        if (excludeUserIds.includes(userId)) return false;
+        if (includeUserIds.includes(userId)) return true;
 
-    private getCheckRoleGroup(guildId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        return (group: RoleGroupSetting) => {
-            const roleIds = group.roles
-                .filter(x => x.guildId === guildId)
-                .map(x => x.id);
-
-            const includedUserIds = userIds.filter(x =>
-                group.includeUserIds.includes(x));
-            const filteredUserIds = userIds.filter(x =>
-                !group.excludeUserIds.includes(x)
-                && !includedUserIds.includes(x)
-                && checkUserForRoles(x, guildId, roleIds));
-            const currentUserIds = [...includedUserIds, ...filteredUserIds];
-
-            enteredUserIds = enteredUserIds?.filter(x =>
-                currentUserIds.includes(x));
-            leftUserIds = leftUserIds?.filter(x =>
-                !group.excludeUserIds.includes(x)
-                && (includedUserIds.includes(x)
-                    || checkUserForRoles(x, guildId, roleIds)));
-
-            const result = {
-                checkType: CheckType.RoleGroups,
-                source: group.name,
-                status: currentUserIds.length > 0,
-                userIds: currentUserIds,
-                enteredUserIds,
-                leftUserIds
-            } as GroupUpdateResult;
-
-            return result;
-        };
+        const roleIds = roles.map(role => role.id);
+        return checkUserForRoles(userId, guildId, roleIds);
     }
 }

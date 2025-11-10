@@ -4,24 +4,14 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { CheckType, GroupUpdateResult } from "../types";
+import { CheckType } from "../types";
 import { checkUserIsBlocked } from "../utils";
-import { VoiceCheckStrategy } from "./voiceCheckStrategy";
+import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
-export class BlockedCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const currentUserIds = userIds.filter(x => checkUserIsBlocked(x));
-        enteredUserIds = enteredUserIds?.filter(x => currentUserIds.includes(x));
-        leftUserIds = leftUserIds?.filter(x => checkUserIsBlocked(x));
+export class BlockedCheck extends VoiceCheckStrategyBase {
+    constructor() { super(CheckType.Blocked); }
 
-        const result = [{
-            checkType: CheckType.Blocked,
-            status: currentUserIds.length > 0,
-            userIds: currentUserIds,
-            enteredUserIds,
-            leftUserIds
-        } as GroupUpdateResult];
-
-        return result;
+    protected checkUser(userId: string) {
+        return !checkUserIsBlocked(userId);
     }
 }

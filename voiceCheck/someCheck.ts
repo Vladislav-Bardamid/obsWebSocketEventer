@@ -4,19 +4,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { CheckType, GroupUpdateResult } from "../types";
-import { VoiceCheckStrategy } from "./voiceCheckStrategy";
+import { CheckType } from "../types";
+import { VoiceCheckStrategyBase } from "./voiceCheckStrategyBase";
 
-export class SomeCheck implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const result = [{
-            checkType: CheckType.Some,
-            status: userIds.length > 0,
-            userIds,
-            enteredUserIds,
-            leftUserIds
-        } as GroupUpdateResult];
+export class SomeCheck extends VoiceCheckStrategyBase {
+    constructor() { super(CheckType.Some); }
 
-        return result;
+    protected checkUser(userId: string): boolean {
+        return true;
     }
 }
