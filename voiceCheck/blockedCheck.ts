@@ -12,6 +12,6 @@ export class BlockedCheck extends VoiceCheckStrategyBase {
     constructor() { super(CheckType.Blocked); }
 
     protected checkUser(userId: string) {
-        return !checkUserIsBlocked(userId);
+        return checkUserIsBlocked(userId);
     }
 }

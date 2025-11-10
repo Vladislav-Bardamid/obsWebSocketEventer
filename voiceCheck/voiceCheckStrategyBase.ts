@@ -17,8 +17,8 @@ export abstract class VoiceCheckStrategyBase implements VoiceCheckStrategy {
 
         const result = [{
             checkType: this.type,
-            status: userIds.length > 0,
-            userIds,
+            status: currentUserIds.length > 0,
+            userIds: currentUserIds,
             enteredUserIds: filteredEnteredUserIds,
             leftUserIds: filteredLeftUserIds
         } as GroupUpdateResult];

@@ -17,7 +17,9 @@ import { checkSelfMuted as checkUserIsSelfMuted, checkUserForRoles, checkUserIsB
 import { VoiceCheckStrategyGroupBase } from "./voiceCheckStrategyGroupBase";
 
 export class PatternCheck extends VoiceCheckStrategyGroupBase<PatternSetting> {
-    constructor() { super(CheckType.Patterns, settings.store.patterns); }
+    constructor() { super(CheckType.Patterns); }
+
+    protected getGroups() { return settings.store.patterns; }
 
     protected checkUser(userId: string, guildId: string, setting: PatternSetting, enteredUserIds?: string[], leftUserIds?: string[]) {
         const groupRules = setting.pattern.split(" ");

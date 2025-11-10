@@ -196,10 +196,10 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
     if (isMe) return;
 
-    const { roleGroups: guildRoleGroups } = settings.use(["roleGroups"]);
+    const { roleGroups } = settings.use(["roleGroups"]);
     const { roles } = GuildMemberStore.getMember(guildId!, user.id)!;
 
-    const items = guildRoleGroups.map(x => ({
+    const items = roleGroups.map(x => ({
         hasRole: x.roles.some(role => roles.includes(role.id)),
         roleGroup: x
     })).sort((a, b) => Number(b.hasRole) - Number(a.hasRole));
@@ -247,12 +247,12 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 function RoleContext(children, { id }: { id: string; }) {
     const guildId = SelectedGuildStore.getGuildId()!;
 
-    const { roleGroups: guildRoleGroups } = settings.use(["roleGroups"]);
+    const { roleGroups } = settings.use(["roleGroups"]);
 
     children.splice(-1, 0, (
         <Menu.MenuItem id="obs-events-role-group" label="OBS Events">
-            {guildRoleGroups.length > 0
-                ? guildRoleGroups.map((roleGroup, index) =>
+            {roleGroups.length > 0
+                ? roleGroups.map((roleGroup, index) =>
                     <React.Fragment key={index}>
                         {createItem(roleGroup)}
                     </React.Fragment>)

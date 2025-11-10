@@ -16,10 +16,10 @@ import { CheckType, GroupUpdateResult, NamedGroup } from "../types";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export abstract class VoiceCheckStrategyGroupBase<T extends NamedGroup> implements VoiceCheckStrategy {
-    protected constructor(private type: CheckType, private groups: T[]) { }
+    protected constructor(private type: CheckType) { }
 
     process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const enabledGroups = this.groups.filter(role => !role.disabled);
+        const enabledGroups = this.getGroups().filter(role => !role.disabled);
         const guildId = ChannelStore.getChannel(chanId)?.guild_id;
 
         const checkGroup = this.getCheckGroup(guildId, userIds, enteredUserIds, leftUserIds);
@@ -31,7 +31,7 @@ export abstract class VoiceCheckStrategyGroupBase<T extends NamedGroup> implemen
     private getCheckGroup(guildId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         return (group: T) => {
             const currentUserIds = userIds.filter(x => this.checkUser(x, guildId, group));
-            const filteredEnteredUserIds = enteredUserIds?.filter(currentUserIds.includes);
+            const filteredEnteredUserIds = enteredUserIds?.filter(x => currentUserIds.includes(x));
             const filteredLeftUserIds = leftUserIds?.filter(x => this.checkUser(x, guildId, group));
 
             const result = {
@@ -47,5 +47,6 @@ export abstract class VoiceCheckStrategyGroupBase<T extends NamedGroup> implemen
         };
     }
 
+    protected abstract getGroups(): T[];
     protected abstract checkUser(userId: string, guildId: string, group: T);
 }
