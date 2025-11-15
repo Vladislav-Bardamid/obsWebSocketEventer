@@ -145,36 +145,16 @@ export default definePlugin({
     },
 
     flux: {
-        STREAM_CREATE({ streamKey }: { streamKey: string; }) {
-            onSreamCreate(streamKey);
-        },
-        STREAM_DELETE({ streamKey }: { streamKey: string; }) {
-            onStreamDelete(streamKey);
-        },
-        VOICE_STATE_UPDATES({ voiceStates }: { voiceStates: VoiceStateChangeEvent[]; }) {
-            onVoiceStateUpdates(voiceStates);
-        },
-        RELATIONSHIP_ADD() {
-            onRelationshipUpdate();
-        },
-        RELATIONSHIP_REMOVE() {
-            onRelationshipUpdate();
-        },
-        RELATIONSHIP_UPDATE() {
-            onRelationshipUpdate();
-        },
-        AUDIO_TOGGLE_SELF_MUTE() {
-            onMuteStatusChange();
-        },
-        AUDIO_TOGGLE_SELF_DEAF() {
-            onDeafStatusChange();
-        },
-        AUDIO_TOGGLE_LOCAL_MUTE() {
-            onMute();
-        },
-        AUDIO_SET_INPUT_VOLUME() {
-            onMute();
-        }
+        STREAM_CREATE: onStreamCreate,
+        STREAM_DELETE: onStreamDelete,
+        VOICE_STATE_UPDATES: onVoiceStateUpdates,
+        RELATIONSHIP_ADD: onRelationshipUpdate,
+        RELATIONSHIP_REMOVE: onRelationshipUpdate,
+        RELATIONSHIP_UPDATE: onRelationshipUpdate,
+        AUDIO_TOGGLE_SELF_MUTE: onMuteStatusChange,
+        AUDIO_TOGGLE_SELF_DEAF: onDeafStatusChange,
+        AUDIO_TOGGLE_LOCAL_MUTE: onMute,
+        AUDIO_SET_INPUT_VOLUME: onMute,
     }
 });
 
@@ -287,11 +267,11 @@ function onMute() {
     userCheckContext.processMuted();
 }
 
-function onVoiceStateUpdates(voiceStates: VoiceStateChangeEvent[]) {
+function onVoiceStateUpdates({ voiceStates }: { voiceStates: VoiceStateChangeEvent[]; }) {
     userCheckContext.processVoiceStates(voiceStates);
 }
 
-function onSreamCreate(streamKey: string) {
+function onStreamCreate({ streamKey }: { streamKey: string; }) {
     const myId = UserStore.getCurrentUser().id;
 
     if (!streamKey.endsWith(myId)) return;
@@ -299,7 +279,7 @@ function onSreamCreate(streamKey: string) {
     obsClient.sendRequest(createMessage("stream", "start"));
 }
 
-function onStreamDelete(streamKey: string) {
+function onStreamDelete({ streamKey }: { streamKey: string; }) {
     const myId = UserStore.getCurrentUser().id;
 
     if (!streamKey.endsWith(myId)) return;
