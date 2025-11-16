@@ -20,7 +20,7 @@ export abstract class VoiceCheckStrategyGroupBase<T extends NamedGroup> implemen
 
     process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
         const enabledGroups = this.getGroups().filter(role => !role.disabled);
-        const guildId = ChannelStore.getChannel(chanId)?.guild_id;
+        const guildId = ChannelStore.getChannel(chanId).guild_id;
 
         const checkGroup = this.getCheckGroup(guildId, userIds, enteredUserIds, leftUserIds);
         const groupUpdates = enabledGroups.map(checkGroup);
