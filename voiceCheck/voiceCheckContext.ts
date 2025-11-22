@@ -90,10 +90,6 @@ export class VoiceCheckContext {
         const myChanId = SelectedChannelStore.getVoiceChannelId()!;
         if (!myChanId) return;
 
-        const channelChanged = voiceStates.some(x => (
-            x.channelId === myChanId
-            || x.oldChannelId === myChanId
-        ) && x.userId !== myId);
         const stateUpdates = voiceStates.filter(x =>
             x.channelId !== x.oldChannelId
             && x.userId !== myId);
@@ -101,7 +97,7 @@ export class VoiceCheckContext {
         const enteredUserIds = stateUpdates.filter(x => x.channelId === myChanId)?.map(x => x.userId);
         const leftUserIds = stateUpdates.filter(x => x.oldChannelId === myChanId)?.map(x => x.userId);
 
-        if (!myState && !channelChanged) return;
+        if (!enteredUserIds?.length && !leftUserIds?.length) return;
 
         this.processAllStrategies(myChanId, enteredUserIds, leftUserIds);
     }
@@ -132,7 +128,7 @@ export class VoiceCheckContext {
         }
 
         result.forEach(x => {
-            const entry = oldValues.get(x.source);
+            const entry = oldValues.get(x.source) ?? false;
             const messageType = x.source ?? strategyType;
 
             if (entry !== x.status) {
