@@ -41,6 +41,9 @@ export const emptyUser = ["", "User"];
 
 const fixedGroups = ["Some", "Friends", "Blocked", "Muted"];
 
+export const nameTitle = "Must start with a letter, can include letters or numbers, and may contain hyphens between parts";
+export const patternTitle = "One or more names allowed, each may start with a hyphen for negation and be separated by spaces.";
+
 export const settings = definePluginSettings({
     credentials: {
         type: OptionType.COMPONENT,

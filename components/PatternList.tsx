@@ -10,7 +10,7 @@ import { Span } from "@components/Span";
 import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
-import { emptyUser } from "..";
+import { emptyUser, nameTitle, patternTitle } from "..";
 import { PatternSetting as PatternSetting } from "../types";
 import { checkValidName, checkValidPattern, makeEmptyPattern } from "../utils";
 import { Input } from "./Input";
@@ -19,15 +19,12 @@ import { MessagesList } from "./MessagesList";
 export function PatternList({ patterns }: PatternListProps) {
     const [isCreating, setIsCreating] = useState(false);
 
-    const nameTitle = "Must start with a letter, can include letters or numbers, and may contain hyphens between parts";
-    const patternTitle = "One or more names allowed, each may start with a hyphen for negation and be separated by spaces.";
-
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Flex flexDirection="column" gap="0.5rem">
             {patterns.map((item, index) => {
                 return (
-                    <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                        <Flex style={{ alignItems: "center", gap: "0.25rem" }}>
+                    <Flex key={index} flexDirection="column" gap="0.25rem">
+                        <Flex alignItems="center" gap="0.25rem">
                             <Switch
                                 checked={!item.disabled}
                                 onChange={e => { item.disabled = !e; }}
@@ -59,10 +56,10 @@ export function PatternList({ patterns }: PatternListProps) {
                             <Span size="xs">Messages:</Span>
                             <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />
                         </>}
-                    </div>);
+                    </Flex>);
             })}
             <div>
-                {isCreating ? <div style={{ display: "flex", alignItems: "center" }}><Input
+                {isCreating ? <Flex alignItems="center"><Input
                     placeholder="Pattern name"
                     initialValue={""}
                     style={{ width: "10rem" }}
@@ -79,7 +76,7 @@ export function PatternList({ patterns }: PatternListProps) {
                             fontWeight: "bold",
                             color: "var(--status-danger)"
                         }}
-                    >X</Button></div> : <Button
+                    >X</Button></Flex> : <Button
                         size={Button.Sizes.MIN}
                         onClick={() => { setIsCreating(true); }}
                         style={{
@@ -89,7 +86,7 @@ export function PatternList({ patterns }: PatternListProps) {
                         }}
                     ><PlusIcon /></Button>}
             </div>
-        </div >
+        </Flex >
     );
 }
 

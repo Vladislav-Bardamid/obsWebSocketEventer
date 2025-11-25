@@ -10,7 +10,7 @@ import { Span } from "@components/Span";
 import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
-import { emptyUser } from "..";
+import { emptyUser, nameTitle } from "..";
 import { RoleGroupSetting } from "../types";
 import { checkValidName, makeEmptyRoleGroup } from "../utils";
 import { Input } from "./Input";
@@ -20,8 +20,6 @@ import { UsersList } from "./UsersList";
 
 export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
     const [isCreating, setIsCreating] = useState(false);
-
-    const nameTitle = "Must start with a letter, can include letters or numbers, and may contain hyphens between parts (not at start or end).";
 
     return (
         <Flex gap="0.5rem" flexDirection="column">
