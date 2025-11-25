@@ -24,11 +24,11 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
     const nameTitle = "Must start with a letter, can include letters or numbers, and may contain hyphens between parts (not at start or end).";
 
     return (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+        <Flex gap="0.5rem" flexDirection="column">
             {roleGroups.map((item, index) => {
                 return (
-                    <div key={index} style={{ display: "flex", flexDirection: "column", gap: "0.25rem" }}>
-                        <Flex style={{ alignItems: "center", gap: "0.25rem" }}>
+                    <Flex key={index} flexDirection="column" gap="0.25rem">
+                        <Flex alignItems="center" gap="0.25rem">
                             <Switch
                                 checked={!item.disabled}
                                 onChange={e => { item.disabled = !e; }}
@@ -57,7 +57,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                             <Span size="xs">Messages:</Span>
                             <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />
                         </>}
-                    </div>);
+                    </Flex>);
             })}
             <div>
                 {isCreating ? <div style={{ display: "flex", alignItems: "center" }}><Input
@@ -87,7 +87,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                         }}
                     ><PlusIcon /></Button>}
             </div>
-        </div >
+        </Flex >
     );
 }
 

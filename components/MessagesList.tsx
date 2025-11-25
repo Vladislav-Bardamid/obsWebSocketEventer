@@ -12,7 +12,7 @@ import { createMessage } from "../utils";
 
 export function MessagesList({ title, horizontalTitles, verticalTitles }: GuildMessageListProps) {
     return (<div>
-        {(horizontalTitles ?? [""]).map((horizontalTitle: string) => <Flex key={horizontalTitle} style={{ gap: 0 }}>
+        {(horizontalTitles ?? [""]).map((horizontalTitle: string) => <Flex key={horizontalTitle} gap="0">
             {verticalTitles.map(verticalTitle => {
                 const value = createMessage(title, horizontalTitle, verticalTitle);
                 const placeholder = [title, verticalTitle, horizontalTitle].filter(x => x).join(" ");

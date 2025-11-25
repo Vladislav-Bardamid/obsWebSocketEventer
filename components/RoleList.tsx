@@ -19,15 +19,10 @@ export function RoleList({ roles }: RoleListProps) {
             index: i
         })).sort((a, b) => a.role?.position - b.role?.position);
 
-    return <Flex flexDirection="row" style={{
-        gap: "0.25rem",
-        alignItems: "center",
-        flexWrap: "wrap"
-    }}>
+    return <Flex flexDirection="row" gap="0.25rem" alignItems="center" style={{ flexWrap: "wrap" }}>
         <Forms.FormText>Roles:</Forms.FormText>
         {roleSettings.map((item, index) => {
             const { role, setting } = item;
-            const error = "Unable to load role";
 
             const guidlName = role && GuildStore.getGuild(setting.guildId).name;
             const title = role?.name ?? "Unable to load role";

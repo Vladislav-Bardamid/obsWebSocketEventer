@@ -13,7 +13,7 @@ export function UsersList({ users, title }: UserListProps) {
     if (users.length === 0) return;
 
     return (
-        <Flex style={{ gap: "0.25rem", display: "flex", flexDirection: "row", flexWrap: "wrap", alignItems: "center" }}>
+        <Flex gap="0.25rem" flexDirection="row" alignItems="center" style={{ flexWrap: "wrap" }}>
             <Forms.FormText>{title}: </Forms.FormText>
             {users.map((item, index) => {
                 const user = UserStore.getUser(item);
