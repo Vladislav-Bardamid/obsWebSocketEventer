@@ -39,6 +39,8 @@ export const obsClient = new OBSWebSocketClient();
 const enterLeave = ["Enter", "Leave"];
 export const emptyUser = ["", "User"];
 
+const fixedGroups = ["Some", "Friends", "Blocked", "Muted"];
+
 export const settings = definePluginSettings({
     credentials: {
         type: OptionType.COMPONENT,
@@ -69,22 +71,10 @@ export const settings = definePluginSettings({
                     verticalTitles={["On", "Off"]}
                     horizontalTitles={["Mute", "Deaf"]} />
             </div>
-            <div>
-                <Forms.FormText>Some messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="some" />
-            </div>
-            <div>
-                <Forms.FormText>Muted messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="muted" />
-            </div>
-            <div>
-                <Forms.FormText>Friend messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="friend" />
-            </div>
-            <div>
-                <Forms.FormText>Blocked messages</Forms.FormText>
-                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title="blocked" />
-            </div>
+            {fixedGroups.map((group, index) => <div key={index}>
+                <Forms.FormText>{group} messages</Forms.FormText>
+                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title={group} />
+            </div>)}
         </Flex>
     },
     roleGroups: {
