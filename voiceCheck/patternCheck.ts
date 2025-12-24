@@ -43,7 +43,9 @@ export class PatternCheck extends VoiceCheckStrategyGroupBase<PatternSetting> {
             const isRule = this.checkRule(groupName, userId);
             if (isRule !== undefined) return isRule !== exclude;
 
-            const group = settings.store.roleGroups.find(group => group.name === groupName);
+            const group = settings.store.roleGroups.find(group =>
+                group.name === groupName
+                && group.roles.some(role => role.guildId === guildId));
             if (!group) return exclude;
 
             const roleIds = group.roles
