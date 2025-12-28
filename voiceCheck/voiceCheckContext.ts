@@ -151,8 +151,13 @@ export class VoiceCheckContext {
     }
 
     private sendMessage(messageType: string, userIds?: string[]) {
+        const users = userIds?.reduce((result, key) => {
+            result[key] = UserStore.getUser(key);
+            return result;
+        }, {});
+
         obsClient.sendRequest(messageType);
-        obsClient.sendBrowserRequest(messageType, { userIds });
+        obsClient.sendBrowserRequest(messageType, { users });
     }
 
     private disposeAll() {
