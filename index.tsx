@@ -20,6 +20,7 @@ import { definePluginSettings } from "@api/Settings";
 import { Flex } from "@components/Flex";
 import { ImageIcon } from "@components/Icons";
 import { Link } from "@components/Link";
+import { Paragraph } from "@components/Paragraph";
 import definePlugin, { OptionType, ReporterTestable } from "@utils/types";
 import { VoiceState } from "@vencord/discord-types";
 import { Forms, GuildMemberStore, Menu, React, SelectedChannelStore, SelectedGuildStore, UserStore, useState, VoiceStateStore } from "@webpack/common";
@@ -63,19 +64,19 @@ export const settings = definePluginSettings({
         type: OptionType.COMPONENT,
         component: () => <Flex flexDirection="column" style={{ gap: "0.5rem" }}>
             <div>
-                <Forms.FormText>Stream status</Forms.FormText>
+                <Paragraph>Stream status</Paragraph>
                 <MessagesList
                     verticalTitles={["Start", "Stop"]}
                     title="Stream" />
             </div>
             <div>
-                <Forms.FormText>Mute/Deafen</Forms.FormText>
+                <Paragraph>Mute/Deafen</Paragraph>
                 <MessagesList
                     verticalTitles={["On", "Off"]}
                     horizontalTitles={["Mute", "Deaf"]} />
             </div>
             {fixedGroups.map((group, index) => <div key={index}>
-                <Forms.FormText>{group} messages</Forms.FormText>
+                <Paragraph>{group} messages</Paragraph>
                 <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title={group} />
             </div>)}
         </Flex>
@@ -86,7 +87,7 @@ export const settings = definePluginSettings({
             const { roleGroups } = settings.use(["roleGroups"]);
 
             return (<div>
-                <Forms.FormText>Guild roles</Forms.FormText>
+                <Paragraph>Guild roles</Paragraph>
                 <RoleGroupList roleGroups={roleGroups} />
             </div>);
         },
@@ -98,7 +99,7 @@ export const settings = definePluginSettings({
             const { patterns } = settings.use(["patterns"]);
 
             return (<div>
-                <Forms.FormText>Group patterns</Forms.FormText>
+                <Paragraph>Group patterns</Paragraph>
                 <PatternList patterns={patterns} />
             </div>);
         },
@@ -115,9 +116,9 @@ export default definePlugin({
 
     settingsAboutComponent: () => (
         <div title="How to use OBSWebSocketEventer">
-            <Forms.FormText>
+            <Paragraph>
                 <Link href="https://github.com/VladislavB/OBSWebSocketEventer">Follow the instructions in the GitHub repo</Link>
-            </Forms.FormText>
+            </Paragraph>
         </div>
     ),
 
