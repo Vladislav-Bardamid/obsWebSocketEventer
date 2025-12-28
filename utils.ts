@@ -4,8 +4,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { GuildMemberStore, RelationshipStore, VoiceStateStore } from "@webpack/common";
-import { MediaEngineStore } from "plugins/voiceMessages/utils";
+import { GuildMemberStore, MediaEngineStore, RelationshipStore, VoiceStateStore } from "@webpack/common";
 
 import { PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
 

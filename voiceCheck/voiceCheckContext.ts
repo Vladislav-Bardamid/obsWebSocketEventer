@@ -140,12 +140,12 @@ export class VoiceCheckContext {
 
             if (x.enteredUserIds?.length) {
                 const message = createMessage(messageType, USER, ENTER);
-                this.sendMessage(message, x.userIds);
+                this.sendMessage(message, x.enteredUserIds);
             }
 
             if (x.leftUserIds?.length) {
                 const message = createMessage(messageType, USER, LEAVE);
-                this.sendMessage(message, x.userIds);
+                this.sendMessage(message, x.leftUserIds);
             }
         });
     }
