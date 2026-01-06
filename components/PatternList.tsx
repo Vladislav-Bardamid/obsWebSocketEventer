@@ -10,8 +10,8 @@ import { Span } from "@components/Span";
 import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
-import { emptyUser, nameTitle, patternTitle } from "..";
-import { PatternSetting as PatternSetting } from "../types";
+import { nameTitle, patternTitle } from "..";
+import { GroupUser, PatternSetting as PatternSetting } from "../types";
 import { checkValidName, checkValidPattern, makeEmptyPattern } from "../utils";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
@@ -54,7 +54,7 @@ export function PatternList({ patterns }: PatternListProps) {
                             validator={e => checkValidPattern(e)} />
                         {!item.disabled && <>
                             <Span size="xs">Messages:</Span>
-                            <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />
+                            <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={Object.values(GroupUser)} title={item.name} />
                         </>}
                     </Flex>);
             })}

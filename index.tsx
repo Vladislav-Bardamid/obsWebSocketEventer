@@ -23,6 +23,7 @@ import { Link } from "@components/Link";
 import { Paragraph } from "@components/Paragraph";
 import definePlugin, { OptionType, ReporterTestable } from "@utils/types";
 import { VoiceState } from "@vencord/discord-types";
+import { RelationshipType } from "@vencord/discord-types/enums";
 import { Forms, GuildMemberStore, Menu, React, SelectedChannelStore, SelectedGuildStore, UserStore, useState, VoiceStateStore } from "@webpack/common";
 
 import { Credentials } from "./components/Credentials";
@@ -30,15 +31,12 @@ import { MessagesList } from "./components/MessagesList";
 import { PatternList } from "./components/PatternList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
-import { ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
-import { createMessage, makeEmptyRole } from "./utils";
+import { EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
+import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType, sendGroupUpdateMessage } from "./utils";
 import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
 const userCheckContext = new VoiceCheckContext();
 export const obsClient = new OBSWebSocketClient();
-
-const enterLeave = ["Enter", "Leave"];
-export const emptyUser = ["", "User"];
 
 const fixedGroups = ["Some", "Friends", "Blocked", "Muted"];
 
@@ -77,7 +75,7 @@ export const settings = definePluginSettings({
             </div>
             {fixedGroups.map((group, index) => <div key={index}>
                 <Paragraph>{group} messages</Paragraph>
-                <MessagesList verticalTitles={enterLeave} horizontalTitles={emptyUser} title={group} />
+                <MessagesList verticalTitles={Object.values(EnterLeave)} horizontalTitles={Object.values(GroupUser)} title={group} />
             </div>)}
         </Flex>
     },
@@ -142,8 +140,8 @@ export default definePlugin({
         STREAM_CREATE: onStreamCreate,
         STREAM_DELETE: onStreamDelete,
         VOICE_STATE_UPDATES: onVoiceStateUpdates,
-        RELATIONSHIP_ADD: onRelationshipUpdate,
-        RELATIONSHIP_REMOVE: onRelationshipUpdate,
+        RELATIONSHIP_ADD: onRelationshipAdd,
+        RELATIONSHIP_REMOVE: onRelationshipRemove,
         RELATIONSHIP_UPDATE: onRelationshipUpdate,
         AUDIO_TOGGLE_SELF_MUTE: onMuteStatusChange,
         AUDIO_TOGGLE_SELF_DEAF: onDeafStatusChange,
@@ -152,14 +150,34 @@ export default definePlugin({
     }
 });
 
-function onRelationshipUpdate() {
+function onRelationshipAdd({ id, type }: { id: string; type: RelationshipType; }) {
+    onRelationshipUpdate({ id, type });
+    sendRelationshipMessage(id, type, EnterLeave.Enter);
+}
+
+function onRelationshipRemove({ id, type }: { id: string; type: RelationshipType; }) {
+    onRelationshipUpdate({ id, type });
+    sendRelationshipMessage(id, type, EnterLeave.Leave);
+}
+
+function sendRelationshipMessage(id: string, type: RelationshipType, enterLeave: EnterLeave) {
+    const relationshipType = relationshipToCheckType(type);
+    const message = createMessage(relationshipType, GroupUser.User, enterLeave);
+
+    sendGroupUpdateMessage(message, [id]);
+}
+
+function onRelationshipUpdate({ id, type }: { id: string; type: RelationshipType; }) {
     const myChanId = SelectedChannelStore.getVoiceChannelId();
     const guildId = SelectedGuildStore.getGuildId();
 
     if (!guildId || !myChanId) return;
 
-    userCheckContext.processFriends();
-    userCheckContext.processBlocked();
+    if (type === RelationshipType.FRIEND) {
+        userCheckContext.processFriends();
+    } else if (type === RelationshipType.BLOCKED) {
+        userCheckContext.processBlocked();
+    }
 }
 
 function UserContext(children, { user, guildId }: UserContextProps) {
@@ -211,6 +229,10 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
                 userCheckContext.processRoleGroups();
                 userCheckContext.processPatterns();
+
+                const isEnter = checked ? EnterLeave.Leave : EnterLeave.Enter;
+                const message = createMessage(roleGroup.name, GroupUser.User, isEnter);
+                sendGroupUpdateMessage(message, [user.id]);
             }}
             icon={ImageIcon}
             checked={checked}
@@ -257,8 +279,13 @@ function RoleContext(children, { id }: { id: string; }) {
     }
 }
 
-function onMute() {
+function onMute({ userId }: { userId: string; }) {
+    const isMuted = checkMute(userId);
+    const enterLeave = isMuted ? EnterLeave.Enter : EnterLeave.Leave;
+    const message = createMessage("muted", GroupUser.User, enterLeave);
+
     userCheckContext.processMuted();
+    sendGroupUpdateMessage(message, [userId]);
 }
 
 function onVoiceStateUpdates({ voiceStates }: { voiceStates: VoiceStateChangeEvent[]; }) {

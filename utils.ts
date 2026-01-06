@@ -4,9 +4,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { GuildMemberStore, MediaEngineStore, RelationshipStore, VoiceStateStore } from "@webpack/common";
+import { RelationshipType } from "@vencord/discord-types/enums";
+import { GuildMemberStore, MediaEngineStore, RelationshipStore, UserStore, VoiceStateStore } from "@webpack/common";
 
-import { PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
+import { obsClient } from ".";
+import { CheckType, PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
 
 export function createMessage(...params: (string | undefined)[]) {
     return params.filter(x => x).map(x => x!.toLowerCase()).join("-");
@@ -45,6 +47,23 @@ export function makeEmptyRoleGroup(name: string) {
     } as RoleGroupSetting;
 }
 
+export function sendGroupUpdateMessage(messageType: string, userIds?: string[]) {
+    const users = userIds?.reduce((result, key) => {
+        result[key] = UserStore.getUser(key);
+        return result;
+    }, {});
+
+    obsClient.sendRequest(messageType);
+    obsClient.sendBrowserRequest(messageType, { users });
+}
+
+export function getChannelUserIds(chanId): string[] {
+    const myId = UserStore.getCurrentUser().id;
+
+    return Object.keys(VoiceStateStore.getVoiceStatesForChannel(chanId))
+        .filter(x => x !== myId);
+}
+
 export function checkMute(userId: string) {
     const result = MediaEngineStore.isLocalMute(userId)
         || MediaEngineStore.getLocalVolume(userId) === 0;
@@ -78,4 +97,15 @@ export function makeEmptyPattern(name: string) {
         pattern: "",
         disabled: false,
     } as PatternSetting;
+}
+
+export function relationshipToCheckType(type: RelationshipType): CheckType {
+    switch (type) {
+        case RelationshipType.FRIEND:
+            return CheckType.Friends;
+        case RelationshipType.BLOCKED:
+            return CheckType.Blocked;
+        default:
+            throw new Error(`Unsupported relationship type: ${type}`);
+    }
 }

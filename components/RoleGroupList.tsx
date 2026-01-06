@@ -10,8 +10,8 @@ import { Span } from "@components/Span";
 import { Switch } from "@components/Switch";
 import { Button, React, useState } from "@webpack/common";
 
-import { emptyUser, nameTitle } from "..";
-import { RoleGroupSetting } from "../types";
+import { nameTitle } from "..";
+import { GroupUser, RoleGroupSetting } from "../types";
 import { checkValidName, makeEmptyRoleGroup } from "../utils";
 import { Input } from "./Input";
 import { MessagesList } from "./MessagesList";
@@ -53,7 +53,7 @@ export function RoleGroupList({ roleGroups }: GuildRoleGroupListProps) {
                         <UsersList users={item.excludeUserIds} title="Excluded users" />
                         {!item.disabled && <>
                             <Span size="xs">Messages:</Span>
-                            <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={emptyUser} title={item.name} />
+                            <MessagesList verticalTitles={["Enter", "Leave"]} horizontalTitles={Object.values(GroupUser)} title={item.name} />
                         </>}
                     </Flex>);
             })}

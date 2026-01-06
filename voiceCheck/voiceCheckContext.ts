@@ -10,11 +10,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { SelectedChannelStore, UserStore, VoiceStateStore } from "@webpack/common";
+import { SelectedChannelStore, UserStore } from "@webpack/common";
 
-import { obsClient } from "..";
 import { CheckType, VoiceStateChangeEvent } from "../types";
-import { createMessage } from "../utils";
+import { createMessage, getChannelUserIds, sendGroupUpdateMessage } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
 import { FriendCheck as FriendsCheck } from "./friendCheck";
 import { MutedCheck } from "./mutedCheck";
@@ -106,12 +105,12 @@ export class VoiceCheckContext {
         const myChanId = SelectedChannelStore.getVoiceChannelId();
         if (!myChanId) return;
 
-        const userIds = this.getChannelUserIds(myChanId);
+        const userIds = getChannelUserIds(myChanId);
         this.processStrategy(type, myChanId, userIds);
     }
 
     private processAllStrategies(chanId: string, enteredUserIds?: string[], leftUserIds?: string[]) {
-        const userIds = this.getChannelUserIds(chanId);
+        const userIds = getChannelUserIds(chanId);
 
         Object.keys(this.strategies).map(x => x as CheckType).forEach(x =>
             this.processStrategy(x, chanId, userIds, enteredUserIds, leftUserIds));
@@ -133,31 +132,21 @@ export class VoiceCheckContext {
 
             if (entry !== x.status) {
                 const message = createMessage(messageType, x.status ? ENTER : LEAVE);
-                this.sendMessage(message, x.userIds);
+                sendGroupUpdateMessage(message, x.userIds);
 
                 oldValues.set(x.source, x.status);
             }
 
             if (x.enteredUserIds?.length) {
                 const message = createMessage(messageType, USER, ENTER);
-                this.sendMessage(message, x.enteredUserIds);
+                sendGroupUpdateMessage(message, x.enteredUserIds);
             }
 
             if (x.leftUserIds?.length) {
                 const message = createMessage(messageType, USER, LEAVE);
-                this.sendMessage(message, x.leftUserIds);
+                sendGroupUpdateMessage(message, x.leftUserIds);
             }
         });
-    }
-
-    private sendMessage(messageType: string, userIds?: string[]) {
-        const users = userIds?.reduce((result, key) => {
-            result[key] = UserStore.getUser(key);
-            return result;
-        }, {});
-
-        obsClient.sendRequest(messageType);
-        obsClient.sendBrowserRequest(messageType, { users });
     }
 
     private disposeAll() {
@@ -165,15 +154,8 @@ export class VoiceCheckContext {
             const messageType = y ?? x[0];
             const message = createMessage(messageType, LEAVE);
 
-            this.sendMessage(message);
+            sendGroupUpdateMessage(message);
         }));
         this.results.clear();
-    }
-
-    private getChannelUserIds(chanId): string[] {
-        const myId = UserStore.getCurrentUser().id;
-
-        return Object.keys(VoiceStateStore.getVoiceStatesForChannel(chanId))
-            .filter(x => x !== myId);
     }
 }
