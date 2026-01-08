@@ -274,7 +274,7 @@ function onMute({ userId, context }: { userId: string; context: string; }) {
     if (context !== "default") return;
 
     userCheckContext.processMuted();
-    sendUserUpdateMessage(CheckType.Muted, !checkMute(userId), userId);
+    sendUserUpdateMessage(CheckType.Muted, checkMute(userId), userId);
 }
 
 function sendUserUpdateMessage(name: string, value: boolean, userId: string) {
