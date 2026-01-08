@@ -31,7 +31,7 @@ import { MessagesList } from "./components/MessagesList";
 import { PatternList } from "./components/PatternList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
-import { EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
+import { CheckType, EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
 import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType, sendGroupUpdateMessage } from "./utils";
 import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
@@ -152,19 +152,12 @@ export default definePlugin({
 
 function onRelationshipAdd({ id, type }: { id: string; type: RelationshipType; }) {
     onRelationshipUpdate({ id, type });
-    sendRelationshipMessage(id, type, EnterLeave.Enter);
+    sendUserUpdateMessage(relationshipToCheckType(type), true, id);
 }
 
 function onRelationshipRemove({ id, type }: { id: string; type: RelationshipType; }) {
     onRelationshipUpdate({ id, type });
-    sendRelationshipMessage(id, type, EnterLeave.Leave);
-}
-
-function sendRelationshipMessage(id: string, type: RelationshipType, enterLeave: EnterLeave) {
-    const relationshipType = relationshipToCheckType(type);
-    const message = createMessage(relationshipType, GroupUser.User, enterLeave);
-
-    sendGroupUpdateMessage(message, [id]);
+    sendUserUpdateMessage(relationshipToCheckType(type), false, id);
 }
 
 function onRelationshipUpdate({ id, type }: { id: string; type: RelationshipType; }) {
@@ -230,9 +223,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
                 userCheckContext.processRoleGroups();
                 userCheckContext.processPatterns();
 
-                const isEnter = checked ? EnterLeave.Leave : EnterLeave.Enter;
-                const message = createMessage(roleGroup.name, GroupUser.User, isEnter);
-                sendGroupUpdateMessage(message, [user.id]);
+                sendUserUpdateMessage(roleGroup.name, checked, user.id);
             }}
             icon={ImageIcon}
             checked={checked}
@@ -279,10 +270,16 @@ function RoleContext(children, { id }: { id: string; }) {
     }
 }
 
-function onMute({ userId }: { userId: string; }) {
-    const isMuted = checkMute(userId);
-    const enterLeave = isMuted ? EnterLeave.Enter : EnterLeave.Leave;
-    const message = createMessage("muted", GroupUser.User, enterLeave);
+function onMute({ userId, context }: { userId: string; context: string; }) {
+    if (context !== "default") return;
+
+    userCheckContext.processMuted();
+    sendUserUpdateMessage(CheckType.Muted, !checkMute(userId), userId);
+}
+
+function sendUserUpdateMessage(name: string, value: boolean, userId: string) {
+    const enterLeave = value ? EnterLeave.Enter : EnterLeave.Leave;
+    const message = createMessage(name, GroupUser.User, enterLeave);
 
     userCheckContext.processMuted();
     sendGroupUpdateMessage(message, [userId]);
