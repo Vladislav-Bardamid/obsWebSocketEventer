@@ -192,13 +192,11 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
     children.splice(-1, 0, (
         <Menu.MenuItem id="obs-events-user-role-groups" label="OBS Events">
-            {items.length > 0
-                ? items.map((x, index) =>
-                    <React.Fragment key={index}>
-                        {splitIndex === index && splitIndex > 0 && <Menu.MenuSeparator />}
-                        {createItem(x.roleGroup, x.hasRole)}
-                    </React.Fragment>)
-                : "None"}
+            {items.length && items.map((x, index) =>
+                <React.Fragment key={index}>
+                    {splitIndex === index && splitIndex > 0 && <Menu.MenuSeparator />}
+                    {createItem(x.roleGroup, x.hasRole)}
+                </React.Fragment>)}
         </Menu.MenuItem>
     ));
 
@@ -238,12 +236,10 @@ function RoleContext(children, { id }: { id: string; }) {
 
     children.splice(-1, 0, (
         <Menu.MenuItem id="obs-events-role-group" label="OBS Events">
-            {roleGroups.length > 0
-                ? roleGroups.map((roleGroup, index) =>
-                    <React.Fragment key={index}>
-                        {createItem(roleGroup)}
-                    </React.Fragment>)
-                : "None"}
+            {roleGroups.length && roleGroups.map((roleGroup, index) =>
+                <React.Fragment key={index}>
+                    {createItem(roleGroup)}
+                </React.Fragment>)}
         </Menu.MenuItem>
     ));
 
