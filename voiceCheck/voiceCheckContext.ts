@@ -1,6 +1,6 @@
 /*
  * Vencord, a Discord client mod
- * Copyright (c) 2025 Vendicated and contributors
+ * Copyright (c) 2026 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
@@ -9,11 +9,16 @@
  * Copyright (c) 2025 Vendicated and contributors
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
-
+/*
+ * Vencord, a Discord client mod
+ * Copyright (c) 2025 Vendicated and contributors
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
 import { SelectedChannelStore, UserStore } from "@webpack/common";
 
-import { CheckType, VoiceStateChangeEvent } from "../types";
-import { createMessage, getChannelUserIds, sendGroupUpdateMessage } from "../utils";
+import { obsClient } from "..";
+import { ActionType, CheckType, VoiceStateChangeEvent } from "../types";
+import { createMessage, getChannelUserIds, userIdsToUserCollection } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
 import { FriendCheck as FriendsCheck } from "./friendCheck";
 import { MutedCheck } from "./mutedCheck";
@@ -132,19 +137,28 @@ export class VoiceCheckContext {
 
             if (entry !== x.status) {
                 const message = createMessage(messageType, x.status ? ENTER : LEAVE);
-                sendGroupUpdateMessage(message, x.userIds);
+                const users = userIdsToUserCollection(x.userIds);
+
+                obsClient.sendRequest(message);
+                obsClient.sendStatus(strategyType, x.status, users, x.source);
 
                 oldValues.set(x.source, x.status);
             }
 
             if (x.enteredUserIds?.length) {
                 const message = createMessage(messageType, USER, ENTER);
-                sendGroupUpdateMessage(message, x.enteredUserIds);
+                const users = userIdsToUserCollection(x.enteredUserIds);
+
+                obsClient.sendRequest(message);
+                obsClient.sendUserStatus(strategyType, ActionType.Enter, users, x.source);
             }
 
             if (x.leftUserIds?.length) {
                 const message = createMessage(messageType, USER, LEAVE);
-                sendGroupUpdateMessage(message, x.leftUserIds);
+                const users = userIdsToUserCollection(x.leftUserIds);
+
+                obsClient.sendRequest(message);
+                obsClient.sendUserStatus(strategyType, ActionType.Leave, users, x.source);
             }
         });
     }
@@ -154,7 +168,9 @@ export class VoiceCheckContext {
             const messageType = y ?? x[0];
             const message = createMessage(messageType, LEAVE);
 
-            sendGroupUpdateMessage(message);
+            obsClient.sendRequest(message);
+            obsClient.sendStatus(x[0], false, undefined, y);
+
         }));
         this.results.clear();
     }

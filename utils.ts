@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+import { User } from "@vencord/discord-types";
 import { RelationshipType } from "@vencord/discord-types/enums";
 import { GuildMemberStore, MediaEngineStore, RelationshipStore, UserStore, VoiceStateStore } from "@webpack/common";
 
-import { obsClient } from ".";
 import { CheckType, PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
 
 export function createMessage(...params: (string | undefined)[]) {
@@ -47,14 +47,11 @@ export function makeEmptyRoleGroup(name: string) {
     } as RoleGroupSetting;
 }
 
-export function sendGroupUpdateMessage(messageType: string, userIds?: string[]) {
-    const users = userIds?.reduce((result, key) => {
+export function userIdsToUserCollection(userIds: string[]) {
+    return userIds.reduce((result, key) => {
         result[key] = UserStore.getUser(key);
         return result;
-    }, {});
-
-    obsClient.sendRequest(messageType);
-    obsClient.sendBrowserRequest(messageType, { users });
+    }, {} as Record<string, User>);
 }
 
 export function getChannelUserIds(chanId): string[] {

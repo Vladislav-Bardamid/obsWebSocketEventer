@@ -5,8 +5,10 @@
  */
 
 import { PluginNative } from "@utils/types";
+import { User } from "@vencord/discord-types";
 
 import { settings } from ".";
+import { ActionType, CheckType, Scope } from "./types";
 
 export class OBSWebSocketClient {
     private native = VencordNative.pluginHelpers.OBSWebSocketEventer as PluginNative<typeof import("./native")>;
@@ -34,8 +36,16 @@ export class OBSWebSocketClient {
         });
     }
 
-    public async sendUserPresence(category: string, status: boolean, users: any[]) {
-        await this.sendBrowserRequest("obs-user-presence", { category, status, users });
+    public async sendUserStatus(type: CheckType, action: ActionType, users?: Record<string, User>, source?: string) {
+        await this.sendBrowserData({ type, scope: Scope.User, action, users, source });
+    }
+
+    public async sendStatus(type: CheckType, status: boolean, users?: Record<string, User>, source?: string) {
+        await this.sendBrowserData({ type, scope: Scope.Group, status, users, source });
+    }
+
+    public async sendBrowserData(data: any) {
+        await this.sendBrowserRequest("OBSWebSocketEventer", data);
     }
 
     public async sendBrowserRequest(name: string, data?: any) {

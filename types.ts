@@ -78,6 +78,18 @@ export enum CheckType {
     Blocked = "blocked"
 }
 
+export enum ActionType {
+    Enter = "enter",
+    Leave = "leave",
+    Add = "add",
+    Remove = "remove"
+}
+
+export enum Scope {
+    User = "user",
+    Group = "group"
+}
+
 export enum EnterLeave {
     Enter = "enter",
     Leave = "leave"

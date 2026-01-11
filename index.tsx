@@ -31,8 +31,8 @@ import { MessagesList } from "./components/MessagesList";
 import { PatternList } from "./components/PatternList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
-import { CheckType, EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
-import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType, sendGroupUpdateMessage } from "./utils";
+import { ActionType, CheckType, EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
+import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType, userIdsToUserCollection } from "./utils";
 import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
 const userCheckContext = new VoiceCheckContext();
@@ -221,7 +221,7 @@ function UserContext(children, { user, guildId }: UserContextProps) {
                 userCheckContext.processRoleGroups();
                 userCheckContext.processPatterns();
 
-                sendUserUpdateMessage(roleGroup.name, checked, user.id);
+                sendUserUpdateMessage(CheckType.RoleGroups, checked, user.id, roleGroup.name);
             }}
             icon={ImageIcon}
             checked={checked}
@@ -273,12 +273,13 @@ function onMute({ userId, context }: { userId: string; context: string; }) {
     sendUserUpdateMessage(CheckType.Muted, checkMute(userId), userId);
 }
 
-function sendUserUpdateMessage(name: string, value: boolean, userId: string) {
+function sendUserUpdateMessage(type: CheckType, value: boolean, userId: string, source?: string) {
     const enterLeave = value ? EnterLeave.Enter : EnterLeave.Leave;
-    const message = createMessage(name, GroupUser.User, enterLeave);
+    const message = createMessage(type, GroupUser.User, enterLeave);
+    const users = userIdsToUserCollection([userId]);
 
-    userCheckContext.processMuted();
-    sendGroupUpdateMessage(message, [userId]);
+    obsClient.sendRequest(message);
+    obsClient.sendUserStatus(type, value ? ActionType.Add : ActionType.Remove, users, source);
 }
 
 function onVoiceStateUpdates({ voiceStates }: { voiceStates: VoiceStateChangeEvent[]; }) {
