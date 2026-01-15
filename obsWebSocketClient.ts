@@ -67,14 +67,6 @@ export class OBSWebSocketClient {
         });
     }
 
-    public async setPersistentData(name: string, data?: any) {
-        await this.native.sendRequestAsync("SetPersistentData", {
-            "realm": "OBS_WEBSOCKET_DATA_REALM_GLOBAL",
-            "slotName": name,
-            "slotValue": data
-        });
-    }
-
     public async checkConnection() {
         const c = settings.store.credentials;
 

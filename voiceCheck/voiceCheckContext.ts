@@ -113,7 +113,7 @@ export class VoiceCheckContext {
         const cachedValues = this.getOrCreateCachedValue(type);
         results.forEach(r => {
             const oldStatus = cachedValues.get(r.source);
-            if (oldStatus === r.status) return;
+            if (!!oldStatus === r.status) return;
 
             this.notify(r);
             cachedValues.set(r.source, r.status);
@@ -142,7 +142,7 @@ export class VoiceCheckContext {
 
     private notify(update: GroupUpdateResult, userScopeStatus?: boolean) {
         const messageType = update.source ?? update.checkType;
-        const message = createMessage(messageType, userScopeStatus ? USER : undefined, update.status ? ENTER : LEAVE);
+        const message = createMessage(messageType, userScopeStatus !== undefined ? USER : undefined, update.status ? ENTER : LEAVE);
 
         obsClient.sendRequest(message);
 
