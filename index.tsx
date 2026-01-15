@@ -32,7 +32,7 @@ import { PatternList } from "./components/PatternList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
 import { ActionType, CheckType, EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
-import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType, userIdsToUserCollection } from "./utils";
+import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType } from "./utils";
 import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
 const userCheckContext = new VoiceCheckContext();
@@ -276,10 +276,10 @@ function onMute({ userId, context }: { userId: string; context: string; }) {
 function sendUserUpdateMessage(type: CheckType, value: boolean, userId: string, source?: string) {
     const enterLeave = value ? EnterLeave.Enter : EnterLeave.Leave;
     const message = createMessage(type, GroupUser.User, enterLeave);
-    const users = userIdsToUserCollection([userId]);
+    const user = UserStore.getUser(userId);
 
     obsClient.sendRequest(message);
-    obsClient.sendUserStatus(type, value ? ActionType.Add : ActionType.Remove, users, source);
+    obsClient.sendUserStatus(type, value ? ActionType.Add : ActionType.Remove, user, source);
 }
 
 function onVoiceStateUpdates({ voiceStates }: { voiceStates: VoiceStateChangeEvent[]; }) {
