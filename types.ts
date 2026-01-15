@@ -59,8 +59,6 @@ export interface GroupUpdateResult {
     source?: string;
     status: boolean;
     userIds: string[];
-    enteredUserIds?: string[];
-    leftUserIds?: string[];
 }
 
 export interface UserJoinResult {

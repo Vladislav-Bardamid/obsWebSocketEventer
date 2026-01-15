@@ -4,20 +4,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/*
- * Vencord, a Discord client mod
- * Copyright (c) 2025 Vendicated and contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
-/*
- * Vencord, a Discord client mod
- * Copyright (c) 2025 Vendicated and contributors
- * SPDX-License-Identifier: GPL-3.0-or-later
- */
 import { SelectedChannelStore, UserStore } from "@webpack/common";
 
 import { obsClient } from "..";
-import { ActionType, CheckType, VoiceStateChangeEvent } from "../types";
+import { CheckType, GroupUpdateResult, VoiceStateChangeEvent } from "../types";
 import { createMessage, getChannelUserIds, userIdsToUserCollection } from "../utils";
 import { BlockedCheck } from "./blockedCheck";
 import { FriendCheck as FriendsCheck } from "./friendCheck";
@@ -75,7 +65,6 @@ export class VoiceCheckContext {
     }
 
     private myLastChannelId?: string;
-
     processVoiceStates(voiceStates: VoiceStateChangeEvent[]) {
         const myId = UserStore.getCurrentUser().id;
         const myState = voiceStates.find(x => x.userId === myId
@@ -103,75 +92,79 @@ export class VoiceCheckContext {
 
         if (!enteredUserIds?.length && !leftUserIds?.length) return;
 
-        this.processAllStrategies(myChanId, enteredUserIds, leftUserIds);
+        this.processAllStrategies(myChanId);
+
+        this.processAllStrategies(myChanId, enteredUserIds, true);
+        this.processAllStrategies(myChanId, leftUserIds, false);
     }
 
-    private process(type: CheckType) {
-        const myChanId = SelectedChannelStore.getVoiceChannelId();
-        if (!myChanId) return;
+    private process(type: CheckType, chanId?: string, userIds?: string[], userScopeStatus?: boolean) {
+        chanId ??= SelectedChannelStore.getVoiceChannelId();
+        if (!chanId) return;
 
-        const userIds = getChannelUserIds(myChanId);
-        this.processStrategy(type, myChanId, userIds);
-    }
+        userIds ??= getChannelUserIds(chanId);
+        const results = this.strategies[type].process(chanId, userIds);
 
-    private processAllStrategies(chanId: string, enteredUserIds?: string[], leftUserIds?: string[]) {
-        const userIds = getChannelUserIds(chanId);
-
-        Object.keys(this.strategies).map(x => x as CheckType).forEach(x =>
-            this.processStrategy(x, chanId, userIds, enteredUserIds, leftUserIds));
-    }
-
-    private processStrategy(strategyType: CheckType, chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
-        const strategy = this.strategies[strategyType];
-        const result = strategy.process(chanId, userIds, enteredUserIds, leftUserIds);
-
-        let oldValues = this.results.get(strategyType);
-        if (!oldValues) {
-            oldValues = new Map();
-            this.results.set(strategyType, oldValues);
+        if (userScopeStatus !== undefined) {
+            results.forEach(r => this.notify(r, userScopeStatus));
+            return;
         }
 
-        result.forEach(x => {
-            const entry = oldValues.get(x.source) ?? false;
-            const messageType = x.source ?? strategyType;
+        const cachedValues = this.getOrCreateCachedValue(type);
+        results.forEach(r => {
+            const oldStatus = cachedValues.get(r.source);
+            if (oldStatus === r.status) return;
 
-            if (entry !== x.status) {
-                const message = createMessage(messageType, x.status ? ENTER : LEAVE);
-                const users = userIdsToUserCollection(x.userIds);
-
-                obsClient.sendRequest(message);
-                obsClient.sendStatus(strategyType, x.status, users, x.source);
-
-                oldValues.set(x.source, x.status);
-            }
-
-            if (x.enteredUserIds?.length) {
-                const message = createMessage(messageType, USER, ENTER);
-                const users = userIdsToUserCollection(x.enteredUserIds);
-
-                obsClient.sendRequest(message);
-                obsClient.sendUserStatus(strategyType, ActionType.Enter, users, x.source);
-            }
-
-            if (x.leftUserIds?.length) {
-                const message = createMessage(messageType, USER, LEAVE);
-                const users = userIdsToUserCollection(x.leftUserIds);
-
-                obsClient.sendRequest(message);
-                obsClient.sendUserStatus(strategyType, ActionType.Leave, users, x.source);
-            }
+            this.notify(r);
+            cachedValues.set(r.source, r.status);
         });
     }
 
+    private processAllStrategies(chanId?: string, userIds?: string[], userScopeStatus?: boolean) {
+        chanId ??= SelectedChannelStore.getVoiceChannelId();
+        if (!chanId) return;
+
+        userIds ??= getChannelUserIds(chanId);
+
+        const strategies = Object.keys(this.strategies) as CheckType[];
+        strategies.forEach(x => this.process(x, chanId, userIds, userScopeStatus));
+    }
+
+    private getOrCreateCachedValue(strategyType: CheckType) {
+        let result = this.results.get(strategyType);
+        if (!result) {
+            result = new Map();
+            this.results.set(strategyType, result);
+        }
+
+        return result;
+    }
+
+    private notify(update: GroupUpdateResult, userScopeStatus?: boolean) {
+        const messageType = update.source ?? update.checkType;
+        const message = createMessage(messageType, userScopeStatus ? USER : undefined, update.status ? ENTER : LEAVE);
+
+        obsClient.sendRequest(message);
+
+        if (userScopeStatus === undefined) {
+            const users = userIdsToUserCollection(update.userIds);
+            obsClient.sendStatus(update.checkType, update.status, users, update.source);
+        } else if (update.status) {
+            const user = UserStore.getUser(update.userIds[0]);
+            obsClient.sendUserStatus(update.checkType, userScopeStatus, user, update.source);
+        }
+    }
+
     private disposeAll() {
-        this.results.entries().forEach(x => x[1].keys().forEach(y => {
-            const messageType = y ?? x[0];
-            const message = createMessage(messageType, LEAVE);
+        for (const [checkType, cachedMap] of this.results) {
+            for (const source of cachedMap.keys()) {
+                const messageType = source ?? checkType;
+                const message = createMessage(messageType, LEAVE);
 
-            obsClient.sendRequest(message);
-            obsClient.sendStatus(x[0], false, undefined, y);
-
-        }));
+                obsClient.sendRequest(message);
+                obsClient.sendStatus(checkType, false, undefined, source);
+            }
+        }
         this.results.clear();
     }
 }

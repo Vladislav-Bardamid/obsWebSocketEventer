@@ -36,8 +36,12 @@ export class OBSWebSocketClient {
         });
     }
 
-    public async sendUserStatus(type: CheckType, action: ActionType, users?: Record<string, User>, source?: string) {
-        await this.sendBrowserData({ type, scope: Scope.User, action, users, source });
+    public async sendUserStatus(type: CheckType, action: ActionType, user: User, source?: string);
+    public async sendUserStatus(type: CheckType, status: boolean, user: User, source?: string);
+
+    public async sendUserStatus(type: CheckType, actionOrStatus: ActionType | boolean, user: User, source?: string) {
+        const actionType = typeof actionOrStatus === "boolean" ? (actionOrStatus ? ActionType.Enter : ActionType.Leave) : actionOrStatus;
+        await this.sendBrowserData({ type, scope: Scope.User, action: actionType, user, source });
     }
 
     public async sendStatus(type: CheckType, status: boolean, users?: Record<string, User>, source?: string) {
@@ -60,6 +64,14 @@ export class OBSWebSocketClient {
                 "event_name": name,
                 "event_data": data
             }
+        });
+    }
+
+    public async setPersistentData(name: string, data?: any) {
+        await this.native.sendRequestAsync("SetPersistentData", {
+            "realm": "OBS_WEBSOCKET_DATA_REALM_GLOBAL",
+            "slotName": name,
+            "slotValue": data
         });
     }
 

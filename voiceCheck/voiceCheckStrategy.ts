@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-import { GroupUpdateResult } from "../types";
+import { GroupUpdateResult as VoiceCheckResult } from "../types";
 
 export interface VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]): GroupUpdateResult[];
+    process(chanId: string, userIds: string[]): VoiceCheckResult[];
 }

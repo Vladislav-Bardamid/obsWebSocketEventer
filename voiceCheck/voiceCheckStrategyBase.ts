@@ -8,17 +8,13 @@ import { GroupUpdateResult } from "../types";
 import { VoiceCheckStrategy } from "./voiceCheckStrategy";
 
 export abstract class VoiceCheckStrategyBase implements VoiceCheckStrategy {
-    process(chanId: string, userIds: string[], enteredUserIds?: string[], leftUserIds?: string[]) {
+    process(chanId: string, userIds: string[]) {
         const currentUserIds = userIds.filter(this.checkUser);
-        const filteredEnteredUserIds = enteredUserIds?.filter(x => currentUserIds.includes(x));
-        const filteredLeftUserIds = leftUserIds?.filter(this.checkUser);
 
         const result = [{
             checkType: this.type,
             status: currentUserIds.length > 0,
             userIds: currentUserIds,
-            enteredUserIds: filteredEnteredUserIds,
-            leftUserIds: filteredLeftUserIds
         } as GroupUpdateResult];
 
         return result;
