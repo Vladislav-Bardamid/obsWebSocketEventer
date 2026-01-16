@@ -6,7 +6,7 @@
 
 import { User } from "@vencord/discord-types";
 import { RelationshipType } from "@vencord/discord-types/enums";
-import { GuildMemberStore, MediaEngineStore, RelationshipStore, UserStore, VoiceStateStore } from "@webpack/common";
+import { GuildMemberStore, MediaEngineStore, RelationshipStore, SelectedChannelStore, UserStore, VoiceStateStore } from "@webpack/common";
 
 import { CheckType, PatternSetting, RoleGroupSetting, RoleSetting } from "./types";
 
@@ -59,6 +59,14 @@ export function getChannelUserIds(chanId): string[] {
 
     return Object.keys(VoiceStateStore.getVoiceStatesForChannel(chanId))
         .filter(x => x !== myId);
+}
+
+export function isUserInCurrentChannel(userId: string) {
+    const chanId = SelectedChannelStore.getVoiceChannelId();
+    if (!chanId) return false;
+
+    const states = getChannelUserIds(chanId);
+    return states.includes(userId);
 }
 
 export function checkMute(userId: string) {

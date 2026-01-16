@@ -32,7 +32,7 @@ import { PatternList } from "./components/PatternList";
 import { RoleGroupList } from "./components/RoleGroupList";
 import { OBSWebSocketClient } from "./obsWebSocketClient";
 import { ActionType, CheckType, EnterLeave, GroupUser, ObsWebSocketCredentials, PatternSetting, RoleGroupSetting, UserContextProps, VoiceStateChangeEvent } from "./types";
-import { checkMute, createMessage, makeEmptyRole, relationshipToCheckType } from "./utils";
+import { checkMute, createMessage, isUserInCurrentChannel, makeEmptyRole, relationshipToCheckType } from "./utils";
 import { VoiceCheckContext } from "./voiceCheck/voiceCheckContext";
 
 const userCheckContext = new VoiceCheckContext();
@@ -218,6 +218,8 @@ function UserContext(children, { user, guildId }: UserContextProps) {
 
                 changeChecked(!checked);
 
+                if (!isUserInCurrentChannel(user.id)) return;
+
                 userCheckContext.processRoleGroups();
                 userCheckContext.processPatterns();
 
@@ -267,7 +269,7 @@ function RoleContext(children, { id }: { id: string; }) {
 }
 
 function onMute({ userId, context }: { userId: string; context: string; }) {
-    if (context !== "default") return;
+    if (context !== "default" || !isUserInCurrentChannel(userId)) return;
 
     userCheckContext.processMuted();
     sendUserUpdateMessage(CheckType.Muted, checkMute(userId), userId);
